@@ -11,6 +11,15 @@ import type { CodexDiscoveredModel } from '../codex/types.js';
 import type { CodexProviderDefinition, CreateCodexProviderOptions } from './types.js';
 
 export async function createCodexProvider(options: CreateCodexProviderOptions = {}): Promise<CodexProviderDefinition> {
+  const { credentials, models, baseUrl } = await resolveCodexProviderInputs(options);
+  return buildCodexProviderDefinition({ credentials, models, baseUrl });
+}
+
+export async function resolveCodexProviderInputs(options: CreateCodexProviderOptions = {}): Promise<{
+  credentials: CodexOAuthCredentials;
+  models: CodexDiscoveredModel[];
+  baseUrl: string;
+}> {
   const credentials = await resolveCodexCredentials(options);
 
   const baseUrl = options.baseUrl ?? DEFAULT_CODEX_BACKEND_BASE_URL;
@@ -23,7 +32,7 @@ export async function createCodexProvider(options: CreateCodexProviderOptions = 
     fetchImpl: options.fetchImpl,
   });
 
-  return buildCodexProviderDefinition({ credentials, models, baseUrl });
+  return { credentials, models, baseUrl };
 }
 
 export function buildCodexProviderDefinition(input: {

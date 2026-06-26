@@ -10,7 +10,7 @@ export type {
 export { doctorCodexProvider } from './diagnostics/doctor.js';
 export { runCodexLiveSmoke } from './diagnostics/smoke.js';
 export type { DoctorCodexProviderOptions } from './diagnostics/doctor.js';
-export type { RunCodexLiveSmokeOptions } from './diagnostics/smoke.js';
+export type { FlueSmokeRuntime, RunCodexLiveSmokeOptions } from './diagnostics/smoke.js';
 export type {
   CodexDoctorReport,
   CodexDoctorStep,

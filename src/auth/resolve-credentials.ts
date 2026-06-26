@@ -1,6 +1,6 @@
 import { composeAbortSignals, timeoutSignalBundle } from '../abort.js';
 import { DEFAULT_CODEX_REFRESH_TIMEOUT_MS } from '../constants.js';
-import { FlueCodexError } from '../errors.js';
+import { FlueCodexError, isFlueCodexError } from '../errors.js';
 import { resolveCodexAccountId } from './account-id.js';
 import { getAccessToken, getRefreshToken, readCodexAuthFile } from './auth-file.js';
 import { persistRefreshedCodexAuth } from './auth-writer.js';
@@ -45,6 +45,14 @@ export async function resolveCodexCredentials(
       tokenUrl: options.tokenUrl,
       signal: refreshSignal.signal,
     });
+  } catch (error) {
+    if (!isFlueCodexError(error) || error.code !== 'token_refresh_failed') throw error;
+    return await adoptRefreshedCodexCredentials({
+      authPath,
+      expectedAccountId: account.accountId,
+      options,
+      cause: error,
+    });
   } finally {
     refreshSignal.cleanup();
     refreshTimeout.cleanup();
@@ -57,14 +65,25 @@ export async function resolveCodexCredentials(
     );
   }
 
-  const updatedAuth = await persistRefreshedCodexAuth({
-    authPath,
-    expectedAccountId: account.accountId,
-    expectedAccessToken: accessToken,
-    expectedRefreshToken: refreshToken,
-    refreshed,
-    now: options.now,
-  });
+  let updatedAuth;
+  try {
+    updatedAuth = await persistRefreshedCodexAuth({
+      authPath,
+      expectedAccountId: account.accountId,
+      expectedAccessToken: accessToken,
+      expectedRefreshToken: refreshToken,
+      refreshed,
+      now: options.now,
+    });
+  } catch (error) {
+    if (!isFlueCodexError(error) || error.code !== 'auth_write_failed') throw error;
+    return await adoptRefreshedCodexCredentials({
+      authPath,
+      expectedAccountId: account.accountId,
+      options,
+      cause: error,
+    });
+  }
 
   return {
     accessToken: refreshed.accessToken,
@@ -74,4 +93,29 @@ export async function resolveCodexCredentials(
     refreshed: true,
     expiresAt: refreshed.expiresAt,
   };
+}
+
+async function adoptRefreshedCodexCredentials(input: {
+  authPath: string;
+  expectedAccountId: string;
+  options: ResolveCodexCredentialsOptions;
+  cause: unknown;
+}): Promise<CodexOAuthCredentials> {
+  const { auth } = await readCodexAuthFile({ authPath: input.authPath });
+  const accessToken = getAccessToken(auth);
+  const account = resolveCodexAccountId(auth, accessToken);
+  const freshness = assessTokenFreshness(accessToken, auth, input.options);
+
+  if (account.accountId === input.expectedAccountId && !freshness.shouldRefresh) {
+    return {
+      accessToken,
+      refreshToken: getRefreshToken(auth),
+      accountId: account.accountId,
+      authPath: input.authPath,
+      refreshed: true,
+      expiresAt: freshness.expiresAt,
+    };
+  }
+
+  throw input.cause;
 }

@@ -3,9 +3,10 @@ import {
   DEFAULT_CODEX_MODEL_CLIENT_VERSION,
   DEFAULT_CODEX_MODEL_TIMEOUT_MS,
 } from '../constants.js';
+import { composeAbortSignals, withAbortSignal } from '../abort.js';
 import { FlueCodexError } from '../errors.js';
 import { isRecord } from '../is-record.js';
-import { codexModelsUrl, timeoutSignalBundle } from './http.js';
+import { codexHttpFailureMessage, codexModelsUrl, timeoutSignalBundle } from './http.js';
 import type { CodexDiscoveredModel, DiscoverCodexModelsOptions, RawCodexModel } from './types.js';
 
 export async function discoverCodexModels(options: DiscoverCodexModelsOptions): Promise<CodexDiscoveredModel[]> {
@@ -14,51 +15,49 @@ export async function discoverCodexModels(options: DiscoverCodexModelsOptions): 
   const url = codexModelsUrl(baseUrl, clientVersion);
   const fetcher = options.fetchImpl ?? fetch;
 
-  const timeout = options.signal ? undefined : timeoutSignalBundle(options.timeoutMs ?? DEFAULT_CODEX_MODEL_TIMEOUT_MS);
-  const signal = options.signal ?? timeout?.signal;
-  let response: Response;
+  const timeout = timeoutSignalBundle(options.timeoutMs ?? DEFAULT_CODEX_MODEL_TIMEOUT_MS);
+  const signalBundle = composeAbortSignals([options.signal, timeout.signal]);
   try {
-    response = await fetcher(url, {
+    const response = await fetcher(url, {
       headers: {
         Authorization: `Bearer ${options.accessToken}`,
         'chatgpt-account-id': options.accountId,
         originator: 'pi',
         accept: 'application/json',
       },
-      ...(signal ? { signal } : {}),
+      ...(signalBundle.signal ? { signal: signalBundle.signal } : {}),
     });
+
+    if (!response.ok) {
+      const code = response.status === 401 || response.status === 403 ? 'model_access_denied' : 'model_discovery_failed';
+      throw new FlueCodexError(code, codexHttpFailureMessage('Codex model discovery', response), {
+        status: response.status,
+      });
+    }
+
+    const json = await withAbortSignal(response.json(), signalBundle.signal).catch((error: unknown) => {
+      throw new FlueCodexError('model_discovery_failed', 'Codex model discovery returned invalid JSON.', {
+        cause: error,
+      });
+    });
+
+    const rawModels = isRecord(json) && Array.isArray(json.models) ? (json.models as RawCodexModel[]) : [];
+    const models = rawModels.map(normalizeCodexModel).filter((model): model is CodexDiscoveredModel => model !== null);
+
+    if (models.length === 0) {
+      throw new FlueCodexError('empty_model_list', 'Codex model discovery returned no API-supported list-visible models.');
+    }
+
+    return models;
   } catch (error) {
+    if (error instanceof FlueCodexError) throw error;
     throw new FlueCodexError('model_discovery_failed', 'Codex model discovery request failed.', {
       cause: error,
     });
   } finally {
-    timeout?.cleanup();
+    signalBundle.cleanup();
+    timeout.cleanup();
   }
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    const code = response.status === 401 || response.status === 403 ? 'model_access_denied' : 'model_discovery_failed';
-    throw new FlueCodexError(
-      code,
-      `Codex model discovery failed with HTTP ${response.status}: ${body || response.statusText}`,
-      { status: response.status },
-    );
-  }
-
-  const json = await response.json().catch((error: unknown) => {
-    throw new FlueCodexError('model_discovery_failed', 'Codex model discovery returned invalid JSON.', {
-      cause: error,
-    });
-  });
-
-  const rawModels = isRecord(json) && Array.isArray(json.models) ? (json.models as RawCodexModel[]) : [];
-  const models = rawModels.map(normalizeCodexModel).filter((model): model is CodexDiscoveredModel => model !== null);
-
-  if (models.length === 0) {
-    throw new FlueCodexError('empty_model_list', 'Codex model discovery returned no API-supported list-visible models.');
-  }
-
-  return models;
 }
 
 export function normalizeCodexModel(raw: RawCodexModel): CodexDiscoveredModel | null {

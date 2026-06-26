@@ -43,4 +43,19 @@ export function timeoutSignalBundle(ms: number, reason?: unknown): AbortSignalBu
   };
 }
 
+export async function withAbortSignal<T>(operation: Promise<T>, signal: AbortSignal | undefined): Promise<T> {
+  if (!signal) return operation;
+  if (signal.aborted) throw abortReason(signal);
+
+  return await new Promise<T>((resolve, reject) => {
+    const abort = () => reject(abortReason(signal));
+    signal.addEventListener('abort', abort, { once: true });
+    operation.then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
+  });
+}
+
+function abortReason(signal: AbortSignal): unknown {
+  return signal.reason ?? new Error('Operation aborted.');
+}
+
 function noop(): void {}

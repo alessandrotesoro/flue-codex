@@ -1,9 +1,8 @@
 import { registerProvider } from '@flue/runtime';
-import { discoverCodexModels, selectDefaultCodexModel } from '../codex/models.js';
+import { selectDefaultCodexModel } from '../codex/models.js';
 import { OPENAI_CODEX_PROVIDER_ID } from '../constants.js';
 import { errorToReportMessage, isFlueCodexError } from '../errors.js';
-import { resolveCodexCredentials } from '../auth/resolve-credentials.js';
-import { buildCodexProviderDefinition } from '../provider/create-provider.js';
+import { buildCodexProviderDefinition, resolveCodexProviderInputs } from '../provider/create-provider.js';
 import { runCodexLiveSmoke } from './smoke.js';
 import type { CodexDoctorReport, CodexDoctorStep, CodexLiveSmokeReport } from './report.js';
 
@@ -34,25 +33,17 @@ export async function doctorCodexProvider(options: DoctorCodexProviderOptions = 
   let defaultModel: string | undefined;
 
   try {
-    const credentials = await resolveCodexCredentials(options);
+    const { credentials, models, baseUrl } = await resolveCodexProviderInputs(options);
     authPath = credentials.authPath;
     refreshed = credentials.refreshed;
     accountIdPresent = credentials.accountId.length > 0;
     steps.push({ name: 'auth', status: 'pass', message: refreshed ? 'Codex auth loaded and refreshed.' : 'Codex auth loaded.' });
 
-    const models = await discoverCodexModels({
-      accessToken: credentials.accessToken,
-      accountId: credentials.accountId,
-      baseUrl: options.baseUrl,
-      clientVersion: options.clientVersion,
-      timeoutMs: options.timeoutMs,
-      fetchImpl: options.fetchImpl,
-    });
     modelCount = models.length;
     defaultModel = selectDefaultCodexModel(models);
     steps.push({ name: 'models', status: 'pass', message: `Discovered ${models.length} usable Codex model(s).` });
 
-    const definition = buildCodexProviderDefinition({ credentials, models, baseUrl: options.baseUrl });
+    const definition = buildCodexProviderDefinition({ credentials, models, baseUrl });
     steps.push({ name: 'provider', status: 'pass', message: `${OPENAI_CODEX_PROVIDER_ID} provider definition can be created.` });
 
     let liveSmoke;

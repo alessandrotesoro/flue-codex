@@ -4,6 +4,7 @@ import {
 } from '../constants.js';
 import { FlueCodexError, errorToReportMessage } from '../errors.js';
 import { isRecord } from '../is-record.js';
+import { codexHttpFailureMessage } from '../codex/http.js';
 import { getJwtCodexAccountId, getJwtExpiration } from './jwt.js';
 import type { CodexTokenRefreshResult } from './types.js';
 
@@ -41,10 +42,9 @@ export async function refreshCodexToken(
   }
 
   if (!response.ok) {
-    const body = await response.text().catch(() => '');
     throw new FlueCodexError(
       'token_refresh_failed',
-      `Codex token refresh failed with HTTP ${response.status}: ${body || response.statusText}`,
+      codexHttpFailureMessage('Codex token refresh', response),
       { status: response.status },
     );
   }

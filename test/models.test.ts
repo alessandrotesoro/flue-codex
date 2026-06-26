@@ -65,6 +65,42 @@ describe('Codex model discovery', () => {
     });
   });
 
+  it('does not expose non-OK response bodies in discovery errors', async () => {
+    const fetchImpl = mockFetch(async () => new Response('refresh_token=secret-refresh', { status: 500, statusText: 'Oops' }));
+
+    await expect(discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl })).rejects.toMatchObject({
+      code: 'model_discovery_failed',
+      message: expect.not.stringContaining('secret-refresh'),
+    });
+  });
+
+  it('keeps timeout active while reading the model response body', async () => {
+    const fetchImpl = mockFetch(async () => ({
+      ok: true,
+      json: () => new Promise(() => undefined),
+    } as Response));
+
+    await expect(
+      discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl, timeoutMs: 1 }),
+    ).rejects.toMatchObject({
+      code: 'model_discovery_failed',
+    });
+  });
+
+  it('keeps the default timeout even when caller provides a signal', async () => {
+    const fetchImpl = mockFetch(async () => ({
+      ok: true,
+      json: () => new Promise(() => undefined),
+    } as Response));
+    const controller = new AbortController();
+
+    await expect(
+      discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl, signal: controller.signal, timeoutMs: 1 }),
+    ).rejects.toMatchObject({
+      code: 'model_discovery_failed',
+    });
+  });
+
   it('maps invalid JSON to model_discovery_failed', async () => {
     const fetchImpl = mockFetch(async () => new Response('{', { status: 200 }));
 
