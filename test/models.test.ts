@@ -1,0 +1,99 @@
+import { describe, expect, it, vi } from 'vitest';
+import { discoverCodexModels, modelOverridesForFlue, normalizeCodexModel } from '../src/codex/models.js';
+import { jsonResponse } from './helpers.js';
+
+describe('Codex model discovery', () => {
+  it('normalizes only list-visible API-supported models', () => {
+    expect(
+      normalizeCodexModel({
+        slug: 'gpt-test',
+        display_name: 'GPT Test',
+        visibility: 'list',
+        supported_in_api: true,
+        context_window: 1000,
+      }),
+    ).toMatchObject({ id: 'gpt-test', name: 'GPT Test', contextWindow: 1000 });
+
+    expect(normalizeCodexModel({ slug: 'hidden', visibility: 'hide', supported_in_api: true })).toBeNull();
+    expect(normalizeCodexModel({ slug: 'no-api', visibility: 'list', supported_in_api: false })).toBeNull();
+  });
+
+  it('calls /codex/models with account headers', async () => {
+    const fetchImpl = vi.fn(async () =>
+      jsonResponse({
+        models: [
+          {
+            slug: 'gpt-test',
+            visibility: 'list',
+            supported_in_api: true,
+            context_window: 123,
+            is_default: true,
+          },
+          { slug: 'hidden', visibility: 'hide', supported_in_api: true },
+        ],
+      }),
+    ) as unknown as typeof fetch;
+
+    const models = await discoverCodexModels({
+      accessToken: 'access',
+      accountId: 'acct',
+      baseUrl: '[redacted-codex-backend-url]/',
+      clientVersion: 'test-version',
+      fetchImpl,
+    });
+
+    expect(models).toHaveLength(1);
+    expect(models[0]).toMatchObject({ id: 'gpt-test', contextWindow: 123, isDefault: true });
+    const [url, init] = vi.mocked(fetchImpl).mock.calls[0]!;
+    expect(String(url)).toBe('[redacted-codex-backend-url]/codex/models?client_version=test-version');
+    expect((init?.headers as Record<string, string>)['chatgpt-account-id']).toBe('acct');
+    expect((init?.headers as Record<string, string>).originator).toBe('pi');
+  });
+
+  it('fails on empty usable model lists', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ models: [{ slug: 'hidden', visibility: 'hide' }] })) as unknown as typeof fetch;
+
+    await expect(discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl })).rejects.toMatchObject({
+      code: 'empty_model_list',
+    });
+  });
+
+  it.each([401, 403])('maps HTTP %i to model_access_denied', async (status) => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ error: 'denied' }, { status })) as unknown as typeof fetch;
+
+    await expect(discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl })).rejects.toMatchObject({
+      code: 'model_access_denied',
+      status,
+    });
+  });
+
+  it('maps invalid JSON to model_discovery_failed', async () => {
+    const fetchImpl = vi.fn(async () => new Response('{', { status: 200 })) as unknown as typeof fetch;
+
+    await expect(discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl })).rejects.toMatchObject({
+      code: 'model_discovery_failed',
+    });
+  });
+
+  it('maps fetch failures to model_discovery_failed', async () => {
+    const fetchImpl = vi.fn(async () => {
+      throw new Error('network down');
+    }) as unknown as typeof fetch;
+
+    await expect(discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl })).rejects.toMatchObject({
+      code: 'model_discovery_failed',
+    });
+  });
+
+  it('maps only Flue-supported model override fields', () => {
+    expect(
+      modelOverridesForFlue([
+        { id: 'gpt-a', contextWindow: 10, maxTokens: 5, isDefault: false },
+        { id: 'gpt-b', isDefault: false },
+      ]),
+    ).toEqual({
+      'gpt-a': { contextWindow: 10, maxTokens: 5 },
+      'gpt-b': {},
+    });
+  });
+});

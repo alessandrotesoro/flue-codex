@@ -1,0 +1,6 @@
+import { registerCodexProvider } from 'flue-codex';
+
+const provider = await registerCodexProvider();
+
+console.log(`Registered openai-codex with ${provider.modelIds.length} model(s).`);
+console.log(`Default model: openai-codex/${provider.defaultModel}`);
