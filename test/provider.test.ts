@@ -1,15 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createCodexProvider, registerCodexProvider } from '../src/index.js';
-import { makeAuth, makeTempAuth, jsonResponse } from './helpers.js';
+import { makeAuth, makeTempAuth, mockJsonFetch } from './helpers.js';
 
 describe('Flue provider construction', () => {
   it('creates an openai-codex provider definition from local auth and live model discovery', async () => {
     const { authPath } = await makeTempAuth(makeAuth());
-    const fetchImpl = vi.fn(async () =>
-      jsonResponse({
-        models: [{ slug: 'gpt-test', visibility: 'list', supported_in_api: true, context_window: 2048 }],
-      }),
-    ) as unknown as typeof fetch;
+    const fetchImpl = mockJsonFetch({
+      models: [{ slug: 'gpt-test', visibility: 'list', supported_in_api: true, context_window: 2048 }],
+    });
 
     const definition = await createCodexProvider({ authPath, fetchImpl });
 
@@ -25,9 +23,7 @@ describe('Flue provider construction', () => {
 
   it('registers the provider with Flue through an injectable registration function', async () => {
     const { authPath } = await makeTempAuth(makeAuth());
-    const fetchImpl = vi.fn(async () =>
-      jsonResponse({ models: [{ slug: 'gpt-test', visibility: 'list', supported_in_api: true }] }),
-    ) as unknown as typeof fetch;
+    const fetchImpl = mockJsonFetch({ models: [{ slug: 'gpt-test', visibility: 'list', supported_in_api: true }] });
     const registerProviderImpl = vi.fn();
 
     const result = await registerCodexProvider({ authPath, fetchImpl, registerProviderImpl });
@@ -42,9 +38,7 @@ describe('Flue provider construction', () => {
 
   it('wraps Flue provider registration failures', async () => {
     const { authPath } = await makeTempAuth(makeAuth());
-    const fetchImpl = vi.fn(async () =>
-      jsonResponse({ models: [{ slug: 'gpt-test', visibility: 'list', supported_in_api: true }] }),
-    ) as unknown as typeof fetch;
+    const fetchImpl = mockJsonFetch({ models: [{ slug: 'gpt-test', visibility: 'list', supported_in_api: true }] });
 
     await expect(
       registerCodexProvider({

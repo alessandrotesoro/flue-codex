@@ -1,4 +1,5 @@
 import { defineAgent } from '@flue/runtime';
+import { timeoutSignalBundle } from '../abort.js';
 import { DEFAULT_CODEX_LIVE_SMOKE_TIMEOUT_MS } from '../constants.js';
 import { errorToReportMessage } from '../errors.js';
 import type { CodexLiveSmokeReport } from './report.js';
@@ -35,14 +36,19 @@ export async function runCodexLiveSmoke(options: RunCodexLiveSmokeOptions): Prom
       })),
     );
 
-    const session = await harness.session();
-    const response = (await withTimeout(
-      session.prompt(prompt, {
+    const timeoutMs = options.timeoutMs ?? DEFAULT_CODEX_LIVE_SMOKE_TIMEOUT_MS;
+    const timeout = timeoutSignalBundle(timeoutMs, new Error(`Live Flue smoke test timed out after ${timeoutMs}ms.`));
+    let response: { text?: unknown };
+    try {
+      const session = await harness.session();
+      response = (await session.prompt(prompt, {
         textVerbosity: 'low',
         tools: [],
-      } as never),
-      options.timeoutMs ?? DEFAULT_CODEX_LIVE_SMOKE_TIMEOUT_MS,
-    )) as { text?: unknown };
+        signal: timeout.signal,
+      } as never)) as { text?: unknown };
+    } finally {
+      timeout.cleanup();
+    }
 
     return {
       ok: true,
@@ -55,21 +61,5 @@ export async function runCodexLiveSmoke(options: RunCodexLiveSmokeOptions): Prom
       model: options.model,
       message: errorToReportMessage(error),
     };
-  }
-}
-
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return promise;
-
-  let timer: NodeJS.Timeout | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`Live Flue smoke test timed out after ${timeoutMs}ms.`)), timeoutMs);
-    timer.unref?.();
-  });
-
-  try {
-    return await Promise.race([promise, timeout]);
-  } finally {
-    if (timer) clearTimeout(timer);
   }
 }

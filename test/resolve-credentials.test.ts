@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it, vi } from 'vitest';
 import { resolveCodexCredentials } from '../src/auth/resolve-credentials.js';
-import { makeAccessToken, makeAuth, makeTempAuth, jsonResponse } from './helpers.js';
+import { makeAccessToken, makeAuth, makeTempAuth, mockJsonFetch } from './helpers.js';
 
 describe('resolveCodexCredentials', () => {
   it('refreshes expired credentials, persists them, and passes an abort signal', async () => {
@@ -16,9 +16,7 @@ describe('resolveCodexCredentials', () => {
         },
       }),
     );
-    const fetchImpl = vi.fn(async () =>
-      jsonResponse({ access_token: refreshedAccess, refresh_token: 'new-refresh' }),
-    ) as unknown as typeof fetch;
+    const fetchImpl = mockJsonFetch({ access_token: refreshedAccess, refresh_token: 'new-refresh' });
 
     const credentials = await resolveCodexCredentials({ authPath, fetchImpl });
 
@@ -56,9 +54,7 @@ describe('resolveCodexCredentials', () => {
         },
       }),
     );
-    const fetchImpl = vi.fn(async () =>
-      jsonResponse({ access_token: makeAccessToken('acct-other'), refresh_token: 'new-refresh' }),
-    ) as unknown as typeof fetch;
+    const fetchImpl = mockJsonFetch({ access_token: makeAccessToken('acct-other'), refresh_token: 'new-refresh' });
 
     await expect(resolveCodexCredentials({ authPath, fetchImpl })).rejects.toMatchObject({ code: 'account_id_mismatch' });
   });

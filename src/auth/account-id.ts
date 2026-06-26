@@ -4,7 +4,6 @@ import { getJwtCodexAccountId } from './jwt.js';
 
 export interface AccountResolution {
   accountId: string;
-  tokenAccountId: string;
 }
 
 export function resolveCodexAccountId(auth: CodexAuthJson, accessToken: string): AccountResolution {
@@ -32,5 +31,5 @@ export function resolveCodexAccountId(auth: CodexAuthJson, accessToken: string):
     );
   }
 
-  return { accountId: storedAccountId ?? tokenAccountId, tokenAccountId };
+  return { accountId: storedAccountId ?? tokenAccountId };
 }

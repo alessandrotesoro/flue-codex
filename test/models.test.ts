@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { discoverCodexModels, modelOverridesForFlue, normalizeCodexModel } from '../src/codex/models.js';
-import { jsonResponse } from './helpers.js';
+import { mockFetch, mockJsonFetch } from './helpers.js';
 
 describe('Codex model discovery', () => {
   it('normalizes only list-visible API-supported models', () => {
@@ -19,20 +19,18 @@ describe('Codex model discovery', () => {
   });
 
   it('calls /codex/models with account headers', async () => {
-    const fetchImpl = vi.fn(async () =>
-      jsonResponse({
-        models: [
-          {
-            slug: 'gpt-test',
-            visibility: 'list',
-            supported_in_api: true,
-            context_window: 123,
-            is_default: true,
-          },
-          { slug: 'hidden', visibility: 'hide', supported_in_api: true },
-        ],
-      }),
-    ) as unknown as typeof fetch;
+    const fetchImpl = mockJsonFetch({
+      models: [
+        {
+          slug: 'gpt-test',
+          visibility: 'list',
+          supported_in_api: true,
+          context_window: 123,
+          is_default: true,
+        },
+        { slug: 'hidden', visibility: 'hide', supported_in_api: true },
+      ],
+    });
 
     const models = await discoverCodexModels({
       accessToken: 'access',
@@ -51,7 +49,7 @@ describe('Codex model discovery', () => {
   });
 
   it('fails on empty usable model lists', async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({ models: [{ slug: 'hidden', visibility: 'hide' }] })) as unknown as typeof fetch;
+    const fetchImpl = mockJsonFetch({ models: [{ slug: 'hidden', visibility: 'hide' }] });
 
     await expect(discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl })).rejects.toMatchObject({
       code: 'empty_model_list',
@@ -59,7 +57,7 @@ describe('Codex model discovery', () => {
   });
 
   it.each([401, 403])('maps HTTP %i to model_access_denied', async (status) => {
-    const fetchImpl = vi.fn(async () => jsonResponse({ error: 'denied' }, { status })) as unknown as typeof fetch;
+    const fetchImpl = mockJsonFetch({ error: 'denied' }, { status });
 
     await expect(discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl })).rejects.toMatchObject({
       code: 'model_access_denied',
@@ -68,7 +66,7 @@ describe('Codex model discovery', () => {
   });
 
   it('maps invalid JSON to model_discovery_failed', async () => {
-    const fetchImpl = vi.fn(async () => new Response('{', { status: 200 })) as unknown as typeof fetch;
+    const fetchImpl = mockFetch(async () => new Response('{', { status: 200 }));
 
     await expect(discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl })).rejects.toMatchObject({
       code: 'model_discovery_failed',
@@ -76,9 +74,9 @@ describe('Codex model discovery', () => {
   });
 
   it('maps fetch failures to model_discovery_failed', async () => {
-    const fetchImpl = vi.fn(async () => {
+    const fetchImpl = mockFetch(async () => {
       throw new Error('network down');
-    }) as unknown as typeof fetch;
+    });
 
     await expect(discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl })).rejects.toMatchObject({
       code: 'model_discovery_failed',

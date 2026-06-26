@@ -1,8 +1,8 @@
-import { access, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { constants as fsConstants } from 'node:fs';
 import { FlueCodexError } from '../errors.js';
+import { isRecord } from '../is-record.js';
 import type { CodexAuthJson, CodexAuthPathOptions } from './types.js';
 
 export function resolveCodexAuthPath(options: CodexAuthPathOptions = {}): string {
@@ -18,21 +18,14 @@ export async function readCodexAuthFile(options: CodexAuthPathOptions = {}): Pro
 }> {
   const authPath = resolveCodexAuthPath(options);
 
-  try {
-    await access(authPath, fsConstants.R_OK);
-  } catch (error) {
-    throw new FlueCodexError(
-      'missing_auth',
-      `Missing Codex auth file at ${authPath}. Run \`codex login\` first.`,
-      { cause: error },
-    );
-  }
-
   let raw: string;
   try {
     raw = await readFile(authPath, 'utf8');
   } catch (error) {
-    throw new FlueCodexError('missing_auth', `Unable to read Codex auth file at ${authPath}.`, {
+    const message = hasErrorCode(error, 'ENOENT')
+      ? `Missing Codex auth file at ${authPath}. Run \`codex login\` first.`
+      : `Unable to read Codex auth file at ${authPath}.`;
+    throw new FlueCodexError('missing_auth', message, {
       cause: error,
     });
   }
@@ -64,6 +57,6 @@ export function getRefreshToken(auth: CodexAuthJson): string | undefined {
   return typeof token === 'string' && token.length > 0 ? token : undefined;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+function hasErrorCode(error: unknown, code: string): boolean {
+  return isRecord(error) && error.code === code;
 }

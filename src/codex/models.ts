@@ -4,7 +4,8 @@ import {
   DEFAULT_CODEX_MODEL_TIMEOUT_MS,
 } from '../constants.js';
 import { FlueCodexError } from '../errors.js';
-import { codexModelsUrl, timeoutSignal } from './http.js';
+import { isRecord } from '../is-record.js';
+import { codexModelsUrl, timeoutSignalBundle } from './http.js';
 import type { CodexDiscoveredModel, DiscoverCodexModelsOptions, RawCodexModel } from './types.js';
 
 export async function discoverCodexModels(options: DiscoverCodexModelsOptions): Promise<CodexDiscoveredModel[]> {
@@ -13,7 +14,8 @@ export async function discoverCodexModels(options: DiscoverCodexModelsOptions): 
   const url = codexModelsUrl(baseUrl, clientVersion);
   const fetcher = options.fetchImpl ?? fetch;
 
-  const signal = options.signal ?? timeoutSignal(options.timeoutMs ?? DEFAULT_CODEX_MODEL_TIMEOUT_MS);
+  const timeout = options.signal ? undefined : timeoutSignalBundle(options.timeoutMs ?? DEFAULT_CODEX_MODEL_TIMEOUT_MS);
+  const signal = options.signal ?? timeout?.signal;
   let response: Response;
   try {
     response = await fetcher(url, {
@@ -29,6 +31,8 @@ export async function discoverCodexModels(options: DiscoverCodexModelsOptions): 
     throw new FlueCodexError('model_discovery_failed', 'Codex model discovery request failed.', {
       cause: error,
     });
+  } finally {
+    timeout?.cleanup();
   }
 
   if (!response.ok) {
@@ -97,8 +101,4 @@ function firstString(...values: unknown[]): string | undefined {
     if (typeof value === 'string' && value.length > 0) return value;
   }
   return undefined;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

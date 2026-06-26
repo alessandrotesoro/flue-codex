@@ -3,6 +3,7 @@ import {
   CODEX_TOKEN_URL,
 } from '../constants.js';
 import { FlueCodexError, errorToReportMessage } from '../errors.js';
+import { isRecord } from '../is-record.js';
 import { getJwtCodexAccountId, getJwtExpiration } from './jwt.js';
 import type { CodexTokenRefreshResult } from './types.js';
 
@@ -75,8 +76,4 @@ export async function refreshCodexToken(
     ...(expiresAt ? { expiresAt } : {}),
     ...(typeof json.id_token === 'string' ? { idToken: json.id_token } : {}),
   };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

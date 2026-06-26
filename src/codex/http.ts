@@ -1,5 +1,5 @@
 import { DEFAULT_CODEX_BACKEND_BASE_URL } from '../constants.js';
-export { timeoutSignal } from '../abort.js';
+export { timeoutSignalBundle } from '../abort.js';
 
 export function normalizeCodexBackendBaseUrl(baseUrl = DEFAULT_CODEX_BACKEND_BASE_URL): string {
   return baseUrl.replace(/\/+$/, '');

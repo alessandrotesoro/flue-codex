@@ -1,4 +1,5 @@
 import { CODEX_ACCOUNT_CLAIM } from '../constants.js';
+import { isRecord } from '../is-record.js';
 
 export interface JwtPayload {
   exp?: unknown;
@@ -31,8 +32,4 @@ export function getJwtCodexAccountId(token: string): string | undefined {
     return auth.chatgpt_account_id;
   }
   return undefined;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

@@ -9,7 +9,6 @@ describe('Codex account id resolution', () => {
 
     expect(resolveCodexAccountId(auth, accessToken)).toEqual({
       accountId: 'acct-a',
-      tokenAccountId: 'acct-a',
     });
   });
 

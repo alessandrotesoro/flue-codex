@@ -1,4 +1,4 @@
-import { composeAbortSignals, timeoutSignal } from '../abort.js';
+import { composeAbortSignals, timeoutSignalBundle } from '../abort.js';
 import { DEFAULT_CODEX_REFRESH_TIMEOUT_MS } from '../constants.js';
 import { FlueCodexError } from '../errors.js';
 import { resolveCodexAccountId } from './account-id.js';
@@ -35,10 +35,8 @@ export async function resolveCodexCredentials(
     );
   }
 
-  const refreshSignal = composeAbortSignals([
-    options.signal,
-    timeoutSignal(options.refreshTimeoutMs ?? options.timeoutMs ?? DEFAULT_CODEX_REFRESH_TIMEOUT_MS),
-  ]);
+  const refreshTimeout = timeoutSignalBundle(options.refreshTimeoutMs ?? options.timeoutMs ?? DEFAULT_CODEX_REFRESH_TIMEOUT_MS);
+  const refreshSignal = composeAbortSignals([options.signal, refreshTimeout.signal]);
 
   let refreshed;
   try {
@@ -49,6 +47,7 @@ export async function resolveCodexCredentials(
     });
   } finally {
     refreshSignal.cleanup();
+    refreshTimeout.cleanup();
   }
 
   if (refreshed.accountId !== account.accountId) {

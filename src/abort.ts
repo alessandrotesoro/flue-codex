@@ -7,6 +7,7 @@ export function composeAbortSignals(signals: Array<AbortSignal | undefined>): Ab
   const activeSignals = signals.filter((signal): signal is AbortSignal => signal !== undefined);
   if (activeSignals.length === 0) return { cleanup: noop };
   if (activeSignals.length === 1) return { signal: activeSignals[0], cleanup: noop };
+  if (typeof AbortSignal.any === 'function') return { signal: AbortSignal.any(activeSignals), cleanup: noop };
 
   const controller = new AbortController();
   const abort = () => {
@@ -29,13 +30,17 @@ export function composeAbortSignals(signals: Array<AbortSignal | undefined>): Ab
   };
 }
 
-export function timeoutSignal(ms: number): AbortSignal | undefined {
-  if (!Number.isFinite(ms) || ms <= 0) return undefined;
-  if (typeof AbortSignal.timeout === 'function') return AbortSignal.timeout(ms);
+export function timeoutSignalBundle(ms: number, reason?: unknown): AbortSignalBundle {
+  if (!Number.isFinite(ms) || ms <= 0) return { cleanup: noop };
 
   const controller = new AbortController();
-  setTimeout(() => controller.abort(), ms).unref?.();
-  return controller.signal;
+  const timer = setTimeout(() => controller.abort(reason), ms);
+  timer.unref?.();
+
+  return {
+    signal: controller.signal,
+    cleanup: () => clearTimeout(timer),
+  };
 }
 
 function noop(): void {}

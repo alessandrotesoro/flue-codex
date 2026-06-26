@@ -2,6 +2,7 @@ import { chmod, readFile, rename, stat, unlink, writeFile } from 'node:fs/promis
 import { dirname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { FlueCodexError } from '../errors.js';
+import { isRecord } from '../is-record.js';
 import { resolveCodexAccountId } from './account-id.js';
 import { getAccessToken } from './auth-file.js';
 import type { CodexAuthJson, CodexTokenRefreshResult } from './types.js';
@@ -78,10 +79,6 @@ export async function persistRefreshedCodexAuth(options: PersistRefreshedAuthOpt
   }
 
   return next;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function privateAuthMode(mode: number | undefined): number {

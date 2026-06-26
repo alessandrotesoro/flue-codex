@@ -11,8 +11,7 @@ export type FlueCodexErrorCode =
   | 'model_discovery_failed'
   | 'model_access_denied'
   | 'empty_model_list'
-  | 'provider_registration_failed'
-  | 'live_smoke_failed';
+  | 'provider_registration_failed';
 
 export class FlueCodexError extends Error {
   readonly code: FlueCodexErrorCode;

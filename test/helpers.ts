@@ -2,6 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
+import { vi } from 'vitest';
 import type { CodexAuthJson } from '../src/auth/types.js';
 
 export function makeJwt(payload: Record<string, unknown>): string {
@@ -51,4 +52,12 @@ export function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
     headers: { 'content-type': 'application/json' },
     ...init,
   });
+}
+
+export function mockFetch(handler: typeof fetch): typeof fetch {
+  return vi.fn(handler) as unknown as typeof fetch;
+}
+
+export function mockJsonFetch(body: unknown, init: ResponseInit = {}): typeof fetch {
+  return mockFetch(async () => jsonResponse(body, init));
 }
