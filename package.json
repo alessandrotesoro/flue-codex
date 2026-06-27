@@ -1,55 +1,55 @@
 {
-  "name": "@sematico/flue-codex",
-  "version": "0.1.0",
-  "description": "Register subscription-backed OpenAI Codex models with Flue using local Codex CLI auth.",
-  "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "bin": {
-    "flue-codex-doctor": "./dist/bin/flue-codex-doctor.js"
-  },
-  "files": [
-    "dist",
-    "LICENSE",
-    "README.md",
-    "docs/*.md",
-    "examples"
-  ],
-  "scripts": {
-    "build": "tsup",
-    "format": "biome format --write .",
-    "lint": "biome lint .",
-    "prepack": "pnpm build",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:live": "FLUE_CODEX_LIVE_SMOKE=1 vitest run test/live-smoke.test.ts"
-  },
-  "keywords": [
-    "flue",
-    "codex",
-    "openai",
-    "provider"
-  ],
-  "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  },
-  "peerDependencies": {
-    "@flue/runtime": "^1.0.0-beta.7"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.5.1",
-    "@flue/runtime": "1.0.0-beta.7",
-    "@types/node": "^24.0.0",
-    "tsup": "^8.5.0",
-    "typescript": "^5.9.0",
-    "vitest": "^4.0.0"
-  }
+	"name": "@sematico/flue-codex",
+	"version": "0.1.0",
+	"description": "Register subscription-backed OpenAI Codex models with Flue using local Codex CLI auth.",
+	"type": "module",
+	"main": "./dist/index.js",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"bin": {
+		"flue-codex-doctor": "./dist/bin/flue-codex-doctor.js"
+	},
+	"files": [
+		"dist",
+		"LICENSE",
+		"README.md",
+		"docs/*.md",
+		"examples"
+	],
+	"scripts": {
+		"build": "tsup",
+		"format": "biome format --write .",
+		"lint": "biome lint .",
+		"prepack": "pnpm build",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"test:live": "FLUE_CODEX_LIVE_SMOKE=1 vitest run test/live-smoke.test.ts"
+	},
+	"keywords": [
+		"flue",
+		"codex",
+		"openai",
+		"provider"
+	],
+	"license": "MIT",
+	"publishConfig": {
+		"access": "public"
+	},
+	"peerDependencies": {
+		"@flue/runtime": "^1.0.0-beta.7"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.1",
+		"@flue/runtime": "1.0.0-beta.7",
+		"@types/node": "^24.0.0",
+		"tsup": "^8.5.0",
+		"typescript": "^5.9.0",
+		"vitest": "^4.0.0"
+	}
 }
