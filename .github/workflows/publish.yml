@@ -1,0 +1,57 @@
+name: Publish Package
+
+on:
+    release:
+        types:
+            - published
+
+permissions:
+    contents: read
+
+concurrency:
+    group: publish-npm-${{ github.event.release.tag_name }}
+    cancel-in-progress: false
+
+jobs:
+    publish:
+        name: Publish to npm
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+
+            - name: Set up pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 9.8.0
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 24.x
+                  registry-url: https://registry.npmjs.org
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Verify release tag matches package version
+              run: |
+                  PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+                  if [ "${GITHUB_REF_NAME}" != "v${PACKAGE_VERSION}" ] && [ "${GITHUB_REF_NAME}" != "${PACKAGE_VERSION}" ]; then
+                      echo "Release tag ${GITHUB_REF_NAME} does not match package version ${PACKAGE_VERSION}."
+                      echo "Use v${PACKAGE_VERSION} or ${PACKAGE_VERSION} for the GitHub release tag."
+                      exit 1
+                  fi
+
+            - name: Verify package
+              run: |
+                  pnpm lint
+                  pnpm typecheck
+                  pnpm test
+                  pnpm build
+
+            - name: Publish
+              run: npm publish --access public
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
