@@ -52,6 +52,27 @@ describe('Codex model discovery', () => {
 		expect((init?.headers as Record<string, string>).originator).toBe('pi');
 	});
 
+	it('uses the injected environment client version when no explicit client version is provided', async () => {
+		const fetchImpl = mockJsonFetch({
+			models: [{ slug: 'gpt-test', visibility: 'list', supported_in_api: true }],
+		});
+
+		await discoverCodexModels({
+			accessToken: 'access',
+			accountId: 'acct',
+			baseUrl: '[redacted-codex-backend-url]/',
+			env: {
+				CODEX_CLIENT_VERSION: 'env-version',
+			} as NodeJS.ProcessEnv,
+			fetchImpl,
+		});
+
+		const firstCall = vi.mocked(fetchImpl).mock.calls.at(0);
+		if (!firstCall) throw new Error('Expected Codex model discovery to call fetch.');
+		const [url] = firstCall;
+		expect(String(url)).toBe('[redacted-codex-backend-url]/codex/models?client_version=env-version');
+	});
+
 	it('fails on empty usable model lists', async () => {
 		const fetchImpl = mockJsonFetch({ models: [{ slug: 'hidden', visibility: 'hide' }] });
 
