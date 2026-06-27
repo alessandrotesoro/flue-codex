@@ -7,122 +7,122 @@ import { persistRefreshedCodexAuth } from './auth-writer.js';
 import { assessTokenFreshness } from './token-freshness.js';
 import { refreshCodexToken } from './token-refresh.js';
 import type {
-  CodexAuthJson,
-  CodexOAuthCredentials,
-  CodexTokenRefreshResult,
-  ResolveCodexCredentialsOptions,
+	CodexAuthJson,
+	CodexOAuthCredentials,
+	CodexTokenRefreshResult,
+	ResolveCodexCredentialsOptions,
 } from './types.js';
 
 export async function resolveCodexCredentials(
-  options: ResolveCodexCredentialsOptions = {},
+	options: ResolveCodexCredentialsOptions = {},
 ): Promise<CodexOAuthCredentials> {
-  const { authPath, auth } = await readCodexAuthFile(options);
-  const accessToken = getAccessToken(auth);
-  const account = resolveCodexAccountId(auth, accessToken);
-  const freshness = assessTokenFreshness(accessToken, auth, options);
+	const { authPath, auth } = await readCodexAuthFile(options);
+	const accessToken = getAccessToken(auth);
+	const account = resolveCodexAccountId(auth, accessToken);
+	const freshness = assessTokenFreshness(accessToken, auth, options);
 
-  if (!freshness.shouldRefresh) {
-    return {
-      accessToken,
-      refreshToken: getRefreshToken(auth),
-      accountId: account.accountId,
-      authPath,
-      refreshed: false,
-      expiresAt: freshness.expiresAt,
-    };
-  }
+	if (!freshness.shouldRefresh) {
+		return {
+			accessToken,
+			refreshToken: getRefreshToken(auth),
+			accountId: account.accountId,
+			authPath,
+			refreshed: false,
+			expiresAt: freshness.expiresAt,
+		};
+	}
 
-  const refreshToken = getRefreshToken(auth);
-  if (!refreshToken) {
-    throw new FlueCodexError(
-      'missing_refresh_token',
-      `Codex access token needs refresh (${freshness.reason}), but tokens.refresh_token is missing. Run \`codex login\` again.`,
-    );
-  }
+	const refreshToken = getRefreshToken(auth);
+	if (!refreshToken) {
+		throw new FlueCodexError(
+			'missing_refresh_token',
+			`Codex access token needs refresh (${freshness.reason}), but tokens.refresh_token is missing. Run \`codex login\` again.`,
+		);
+	}
 
-  const refreshTimeout = timeoutSignalBundle(
-    options.refreshTimeoutMs ?? options.timeoutMs ?? DEFAULT_CODEX_REFRESH_TIMEOUT_MS,
-  );
-  const refreshSignal = composeAbortSignals([options.signal, refreshTimeout.signal]);
+	const refreshTimeout = timeoutSignalBundle(
+		options.refreshTimeoutMs ?? options.timeoutMs ?? DEFAULT_CODEX_REFRESH_TIMEOUT_MS,
+	);
+	const refreshSignal = composeAbortSignals([options.signal, refreshTimeout.signal]);
 
-  let refreshed: CodexTokenRefreshResult;
-  try {
-    refreshed = await refreshCodexToken(refreshToken, {
-      fetchImpl: options.fetchImpl,
-      tokenUrl: options.tokenUrl,
-      signal: refreshSignal.signal,
-    });
-  } catch (error) {
-    if (!isFlueCodexError(error) || error.code !== 'token_refresh_failed') throw error;
-    return await adoptRefreshedCodexCredentials({
-      authPath,
-      expectedAccountId: account.accountId,
-      options,
-      cause: error,
-    });
-  } finally {
-    refreshSignal.cleanup();
-    refreshTimeout.cleanup();
-  }
+	let refreshed: CodexTokenRefreshResult;
+	try {
+		refreshed = await refreshCodexToken(refreshToken, {
+			fetchImpl: options.fetchImpl,
+			tokenUrl: options.tokenUrl,
+			signal: refreshSignal.signal,
+		});
+	} catch (error) {
+		if (!isFlueCodexError(error) || error.code !== 'token_refresh_failed') throw error;
+		return await adoptRefreshedCodexCredentials({
+			authPath,
+			expectedAccountId: account.accountId,
+			options,
+			cause: error,
+		});
+	} finally {
+		refreshSignal.cleanup();
+		refreshTimeout.cleanup();
+	}
 
-  if (refreshed.accountId !== account.accountId) {
-    throw new FlueCodexError(
-      'account_id_mismatch',
-      'Codex token refresh returned credentials for a different account.',
-    );
-  }
+	if (refreshed.accountId !== account.accountId) {
+		throw new FlueCodexError(
+			'account_id_mismatch',
+			'Codex token refresh returned credentials for a different account.',
+		);
+	}
 
-  let updatedAuth: CodexAuthJson;
-  try {
-    updatedAuth = await persistRefreshedCodexAuth({
-      authPath,
-      expectedAccountId: account.accountId,
-      expectedAccessToken: accessToken,
-      expectedRefreshToken: refreshToken,
-      refreshed,
-      now: options.now,
-    });
-  } catch (error) {
-    if (!isFlueCodexError(error) || error.code !== 'auth_write_failed') throw error;
-    return await adoptRefreshedCodexCredentials({
-      authPath,
-      expectedAccountId: account.accountId,
-      options,
-      cause: error,
-    });
-  }
+	let updatedAuth: CodexAuthJson;
+	try {
+		updatedAuth = await persistRefreshedCodexAuth({
+			authPath,
+			expectedAccountId: account.accountId,
+			expectedAccessToken: accessToken,
+			expectedRefreshToken: refreshToken,
+			refreshed,
+			now: options.now,
+		});
+	} catch (error) {
+		if (!isFlueCodexError(error) || error.code !== 'auth_write_failed') throw error;
+		return await adoptRefreshedCodexCredentials({
+			authPath,
+			expectedAccountId: account.accountId,
+			options,
+			cause: error,
+		});
+	}
 
-  return {
-    accessToken: refreshed.accessToken,
-    refreshToken: refreshed.refreshToken,
-    accountId: refreshed.accountId,
-    authPath,
-    refreshed: true,
-    expiresAt: refreshed.expiresAt,
-  };
+	return {
+		accessToken: refreshed.accessToken,
+		refreshToken: refreshed.refreshToken,
+		accountId: refreshed.accountId,
+		authPath,
+		refreshed: true,
+		expiresAt: refreshed.expiresAt,
+	};
 }
 
 async function adoptRefreshedCodexCredentials(input: {
-  authPath: string;
-  expectedAccountId: string;
-  options: ResolveCodexCredentialsOptions;
-  cause: unknown;
+	authPath: string;
+	expectedAccountId: string;
+	options: ResolveCodexCredentialsOptions;
+	cause: unknown;
 }): Promise<CodexOAuthCredentials> {
-  const { auth } = await readCodexAuthFile({ authPath: input.authPath });
-  const accessToken = getAccessToken(auth);
-  const account = resolveCodexAccountId(auth, accessToken);
-  const freshness = assessTokenFreshness(accessToken, auth, input.options);
+	const { auth } = await readCodexAuthFile({ authPath: input.authPath });
+	const accessToken = getAccessToken(auth);
+	const account = resolveCodexAccountId(auth, accessToken);
+	const freshness = assessTokenFreshness(accessToken, auth, input.options);
 
-  if (account.accountId === input.expectedAccountId && !freshness.shouldRefresh) {
-    return {
-      accessToken,
-      refreshToken: getRefreshToken(auth),
-      accountId: account.accountId,
-      authPath: input.authPath,
-      refreshed: true,
-      expiresAt: freshness.expiresAt,
-    };
-  }
+	if (account.accountId === input.expectedAccountId && !freshness.shouldRefresh) {
+		return {
+			accessToken,
+			refreshToken: getRefreshToken(auth),
+			accountId: account.accountId,
+			authPath: input.authPath,
+			refreshed: true,
+			expiresAt: freshness.expiresAt,
+		};
+	}
 
-  throw input.cause;
+	throw input.cause;
 }
