@@ -62,11 +62,13 @@ describe('runCodexLiveSmoke', () => {
   });
 });
 
-function fakeRuntime(overrides: {
-  initializeRootHarness?: () => Promise<unknown>;
-  session?: () => Promise<unknown>;
-  prompt?: (prompt: string, options: unknown) => Promise<{ text?: unknown }>;
-} = {}): FlueSmokeRuntime {
+function fakeRuntime(
+  overrides: {
+    initializeRootHarness?: () => Promise<unknown>;
+    session?: () => Promise<unknown>;
+    prompt?: (prompt: string, options: unknown) => Promise<{ text?: unknown }>;
+  } = {},
+): FlueSmokeRuntime {
   const prompt = overrides.prompt ?? (async () => ({ text: '{"ok":true}' }));
   const session = overrides.session ?? (async () => ({ prompt }));
   const initializeRootHarness = overrides.initializeRootHarness ?? (async () => ({ session }));

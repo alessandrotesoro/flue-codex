@@ -5,7 +5,9 @@ import { makeAuth, makeTempAuth, mockJsonFetch } from './helpers.js';
 describe('doctor', () => {
   it('reports auth, models, provider, and skipped live smoke', async () => {
     const { authPath } = await makeTempAuth(makeAuth());
-    const fetchImpl = mockJsonFetch({ models: [{ slug: 'gpt-test', visibility: 'list', supported_in_api: true, is_default: true }] });
+    const fetchImpl = mockJsonFetch({
+      models: [{ slug: 'gpt-test', visibility: 'list', supported_in_api: true, is_default: true }],
+    });
 
     const report = await doctorCodexProvider({ authPath, fetchImpl });
 
@@ -17,7 +19,9 @@ describe('doctor', () => {
 
   it('registers the provider before running requested live smoke', async () => {
     const { authPath } = await makeTempAuth(makeAuth());
-    const fetchImpl = mockJsonFetch({ models: [{ slug: 'gpt-test', visibility: 'list', supported_in_api: true, is_default: true }] });
+    const fetchImpl = mockJsonFetch({
+      models: [{ slug: 'gpt-test', visibility: 'list', supported_in_api: true, is_default: true }],
+    });
     const registerProviderImpl = vi.fn();
     const liveSmokeImpl = vi.fn(async () => ({ ok: true, model: 'openai-codex/gpt-test', text: '{"ok":true}' }));
 
@@ -43,7 +47,9 @@ describe('doctor', () => {
 
   it('reports live smoke failure without throwing', async () => {
     const { authPath } = await makeTempAuth(makeAuth());
-    const fetchImpl = mockJsonFetch({ models: [{ slug: 'gpt-test', visibility: 'list', supported_in_api: true, is_default: true }] });
+    const fetchImpl = mockJsonFetch({
+      models: [{ slug: 'gpt-test', visibility: 'list', supported_in_api: true, is_default: true }],
+    });
 
     const report = await doctorCodexProvider({
       authPath,

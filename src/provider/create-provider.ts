@@ -1,9 +1,5 @@
 import type { HttpProviderRegistration } from '@flue/runtime';
-import {
-  DEFAULT_CODEX_BACKEND_BASE_URL,
-  OPENAI_CODEX_PROVIDER_ID,
-  OPENAI_CODEX_RESPONSES_API,
-} from '../constants.js';
+import { DEFAULT_CODEX_BACKEND_BASE_URL, OPENAI_CODEX_PROVIDER_ID, OPENAI_CODEX_RESPONSES_API } from '../constants.js';
 import { resolveCodexCredentials } from '../auth/resolve-credentials.js';
 import type { CodexOAuthCredentials } from '../auth/types.js';
 import { discoverCodexModels, modelOverridesForFlue, selectDefaultCodexModel } from '../codex/models.js';

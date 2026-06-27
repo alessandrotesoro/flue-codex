@@ -37,16 +37,24 @@ export async function doctorCodexProvider(options: DoctorCodexProviderOptions = 
     authPath = credentials.authPath;
     refreshed = credentials.refreshed;
     accountIdPresent = credentials.accountId.length > 0;
-    steps.push({ name: 'auth', status: 'pass', message: refreshed ? 'Codex auth loaded and refreshed.' : 'Codex auth loaded.' });
+    steps.push({
+      name: 'auth',
+      status: 'pass',
+      message: refreshed ? 'Codex auth loaded and refreshed.' : 'Codex auth loaded.',
+    });
 
     modelCount = models.length;
     defaultModel = selectDefaultCodexModel(models);
     steps.push({ name: 'models', status: 'pass', message: `Discovered ${models.length} usable Codex model(s).` });
 
     const definition = buildCodexProviderDefinition({ credentials, models, baseUrl });
-    steps.push({ name: 'provider', status: 'pass', message: `${OPENAI_CODEX_PROVIDER_ID} provider definition can be created.` });
+    steps.push({
+      name: 'provider',
+      status: 'pass',
+      message: `${OPENAI_CODEX_PROVIDER_ID} provider definition can be created.`,
+    });
 
-    let liveSmoke;
+    let liveSmoke: CodexLiveSmokeReport | undefined;
     if (options.liveSmoke) {
       const register = options.registerProviderImpl ?? registerProvider;
       register(definition.providerId, definition.registration);

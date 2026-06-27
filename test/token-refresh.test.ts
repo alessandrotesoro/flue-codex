@@ -14,7 +14,9 @@ describe('token refresh', () => {
       refreshToken: 'new-refresh',
       accountId: 'acct-refresh',
     });
-    const [, init] = vi.mocked(fetchImpl).mock.calls[0]!;
+    const firstCall = vi.mocked(fetchImpl).mock.calls.at(0);
+    if (!firstCall) throw new Error('Expected token refresh to call fetch.');
+    const [, init] = firstCall;
     expect(String(init?.body)).toContain('grant_type=refresh_token');
     expect(String(init?.body)).toContain('client_id=');
   });
@@ -33,7 +35,9 @@ describe('token refresh', () => {
   });
 
   it('does not expose non-OK response bodies in refresh errors', async () => {
-    const fetchImpl = mockFetch(async () => new Response('refresh_token=secret-refresh', { status: 400, statusText: 'Bad Request' }));
+    const fetchImpl = mockFetch(
+      async () => new Response('refresh_token=secret-refresh', { status: 400, statusText: 'Bad Request' }),
+    );
 
     await expect(refreshCodexToken('old-refresh', { fetchImpl })).rejects.toMatchObject({
       code: 'token_refresh_failed',

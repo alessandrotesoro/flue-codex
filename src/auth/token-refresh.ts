@@ -1,7 +1,4 @@
-import {
-  CODEX_OAUTH_CLIENT_ID,
-  CODEX_TOKEN_URL,
-} from '../constants.js';
+import { CODEX_OAUTH_CLIENT_ID, CODEX_TOKEN_URL } from '../constants.js';
 import { FlueCodexError, errorToReportMessage } from '../errors.js';
 import { isRecord } from '../is-record.js';
 import { codexHttpFailureMessage } from '../codex/http.js';
@@ -42,11 +39,9 @@ export async function refreshCodexToken(
   }
 
   if (!response.ok) {
-    throw new FlueCodexError(
-      'token_refresh_failed',
-      codexHttpFailureMessage('Codex token refresh', response),
-      { status: response.status },
-    );
+    throw new FlueCodexError('token_refresh_failed', codexHttpFailureMessage('Codex token refresh', response), {
+      status: response.status,
+    });
   }
 
   const json = await response.json().catch((error: unknown) => {

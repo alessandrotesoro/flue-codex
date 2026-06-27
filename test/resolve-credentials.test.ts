@@ -23,7 +23,9 @@ describe('resolveCodexCredentials', () => {
     expect(credentials.refreshed).toBe(true);
     expect(credentials.accessToken).toBe(refreshedAccess);
     expect(credentials.refreshToken).toBe('new-refresh');
-    const [, init] = vi.mocked(fetchImpl).mock.calls[0]!;
+    const firstCall = vi.mocked(fetchImpl).mock.calls.at(0);
+    if (!firstCall) throw new Error('Expected credential resolution to call fetch.');
+    const [, init] = firstCall;
     expect(init?.signal).toBeInstanceOf(AbortSignal);
 
     const saved = JSON.parse(await readFile(authPath, 'utf8'));
@@ -56,7 +58,9 @@ describe('resolveCodexCredentials', () => {
     );
     const fetchImpl = mockJsonFetch({ access_token: makeAccessToken('acct-other'), refresh_token: 'new-refresh' });
 
-    await expect(resolveCodexCredentials({ authPath, fetchImpl })).rejects.toMatchObject({ code: 'account_id_mismatch' });
+    await expect(resolveCodexCredentials({ authPath, fetchImpl })).rejects.toMatchObject({
+      code: 'account_id_mismatch',
+    });
   });
 
   it('adopts same-account auth refreshed by a concurrent caller after refresh failure', async () => {

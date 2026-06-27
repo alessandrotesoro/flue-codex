@@ -29,7 +29,8 @@ export async function discoverCodexModels(options: DiscoverCodexModelsOptions): 
     });
 
     if (!response.ok) {
-      const code = response.status === 401 || response.status === 403 ? 'model_access_denied' : 'model_discovery_failed';
+      const code =
+        response.status === 401 || response.status === 403 ? 'model_access_denied' : 'model_discovery_failed';
       throw new FlueCodexError(code, codexHttpFailureMessage('Codex model discovery', response), {
         status: response.status,
       });
@@ -45,7 +46,10 @@ export async function discoverCodexModels(options: DiscoverCodexModelsOptions): 
     const models = rawModels.map(normalizeCodexModel).filter((model): model is CodexDiscoveredModel => model !== null);
 
     if (models.length === 0) {
-      throw new FlueCodexError('empty_model_list', 'Codex model discovery returned no API-supported list-visible models.');
+      throw new FlueCodexError(
+        'empty_model_list',
+        'Codex model discovery returned no API-supported list-visible models.',
+      );
     }
 
     return models;
@@ -79,7 +83,9 @@ export function normalizeCodexModel(raw: RawCodexModel): CodexDiscoveredModel | 
   };
 }
 
-export function modelOverridesForFlue(models: CodexDiscoveredModel[]): Record<string, { contextWindow?: number; maxTokens?: number }> {
+export function modelOverridesForFlue(
+  models: CodexDiscoveredModel[],
+): Record<string, { contextWindow?: number; maxTokens?: number }> {
   return Object.fromEntries(
     models.map((model) => [
       model.id,

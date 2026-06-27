@@ -42,7 +42,9 @@ describe('Codex model discovery', () => {
 
     expect(models).toHaveLength(1);
     expect(models[0]).toMatchObject({ id: 'gpt-test', contextWindow: 123, isDefault: true });
-    const [url, init] = vi.mocked(fetchImpl).mock.calls[0]!;
+    const firstCall = vi.mocked(fetchImpl).mock.calls.at(0);
+    if (!firstCall) throw new Error('Expected Codex model discovery to call fetch.');
+    const [url, init] = firstCall;
     expect(String(url)).toBe('[redacted-codex-backend-url]/codex/models?client_version=test-version');
     expect((init?.headers as Record<string, string>)['chatgpt-account-id']).toBe('acct');
     expect((init?.headers as Record<string, string>).originator).toBe('pi');
@@ -66,7 +68,9 @@ describe('Codex model discovery', () => {
   });
 
   it('does not expose non-OK response bodies in discovery errors', async () => {
-    const fetchImpl = mockFetch(async () => new Response('refresh_token=secret-refresh', { status: 500, statusText: 'Oops' }));
+    const fetchImpl = mockFetch(
+      async () => new Response('refresh_token=secret-refresh', { status: 500, statusText: 'Oops' }),
+    );
 
     await expect(discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl })).rejects.toMatchObject({
       code: 'model_discovery_failed',
@@ -75,10 +79,13 @@ describe('Codex model discovery', () => {
   });
 
   it('keeps timeout active while reading the model response body', async () => {
-    const fetchImpl = mockFetch(async () => ({
-      ok: true,
-      json: () => new Promise(() => undefined),
-    } as Response));
+    const fetchImpl = mockFetch(
+      async () =>
+        ({
+          ok: true,
+          json: () => new Promise(() => undefined),
+        }) as Response,
+    );
 
     await expect(
       discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl, timeoutMs: 1 }),
@@ -88,10 +95,13 @@ describe('Codex model discovery', () => {
   });
 
   it('keeps the default timeout even when caller provides a signal', async () => {
-    const fetchImpl = mockFetch(async () => ({
-      ok: true,
-      json: () => new Promise(() => undefined),
-    } as Response));
+    const fetchImpl = mockFetch(
+      async () =>
+        ({
+          ok: true,
+          json: () => new Promise(() => undefined),
+        }) as Response,
+    );
     const controller = new AbortController();
 
     await expect(

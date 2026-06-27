@@ -6,7 +6,12 @@ import { getAccessToken, getRefreshToken, readCodexAuthFile } from './auth-file.
 import { persistRefreshedCodexAuth } from './auth-writer.js';
 import { assessTokenFreshness } from './token-freshness.js';
 import { refreshCodexToken } from './token-refresh.js';
-import type { CodexOAuthCredentials, ResolveCodexCredentialsOptions } from './types.js';
+import type {
+  CodexAuthJson,
+  CodexOAuthCredentials,
+  CodexTokenRefreshResult,
+  ResolveCodexCredentialsOptions,
+} from './types.js';
 
 export async function resolveCodexCredentials(
   options: ResolveCodexCredentialsOptions = {},
@@ -35,10 +40,12 @@ export async function resolveCodexCredentials(
     );
   }
 
-  const refreshTimeout = timeoutSignalBundle(options.refreshTimeoutMs ?? options.timeoutMs ?? DEFAULT_CODEX_REFRESH_TIMEOUT_MS);
+  const refreshTimeout = timeoutSignalBundle(
+    options.refreshTimeoutMs ?? options.timeoutMs ?? DEFAULT_CODEX_REFRESH_TIMEOUT_MS,
+  );
   const refreshSignal = composeAbortSignals([options.signal, refreshTimeout.signal]);
 
-  let refreshed;
+  let refreshed: CodexTokenRefreshResult;
   try {
     refreshed = await refreshCodexToken(refreshToken, {
       fetchImpl: options.fetchImpl,
@@ -65,7 +72,7 @@ export async function resolveCodexCredentials(
     );
   }
 
-  let updatedAuth;
+  let updatedAuth: CodexAuthJson;
   try {
     updatedAuth = await persistRefreshedCodexAuth({
       authPath,
