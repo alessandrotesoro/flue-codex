@@ -3,6 +3,14 @@
 	"version": "0.1.0",
 	"description": "Register subscription-backed OpenAI Codex models with Flue using local Codex CLI auth.",
 	"type": "module",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/alessandrotesoro/flue-codex.git"
+	},
+	"homepage": "https://github.com/alessandrotesoro/flue-codex#readme",
+	"bugs": {
+		"url": "https://github.com/alessandrotesoro/flue-codex/issues"
+	},
 	"main": "./dist/index.js",
 	"module": "./dist/index.js",
 	"types": "./dist/index.d.ts",
