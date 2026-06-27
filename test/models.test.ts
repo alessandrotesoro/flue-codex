@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { discoverCodexModels, modelOverridesForFlue, normalizeCodexModel } from '../src/codex/models.js';
+import { discoverCodexModels } from '../src/codex/model-discovery.js';
+import { modelOverridesForFlue } from '../src/codex/model-overrides.js';
+import { normalizeCodexModel } from '../src/codex/model-normalization.js';
 import { mockFetch, mockJsonFetch } from './helpers.js';
 
 describe('Codex model discovery', () => {

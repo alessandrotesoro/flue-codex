@@ -1,5 +1,5 @@
-import { DEFAULT_PROACTIVE_REFRESH_MS, DEFAULT_REFRESH_SKEW_MS } from '../constants.js';
-import type { CodexAuthJson } from './types.js';
+import { DEFAULT_PROACTIVE_REFRESH_MS, DEFAULT_REFRESH_SKEW_MS } from './auth.constants.js';
+import type { CodexAuthJson } from './auth.types.js';
 import { getJwtExpiration } from './jwt.js';
 
 export interface TokenFreshnessOptions {

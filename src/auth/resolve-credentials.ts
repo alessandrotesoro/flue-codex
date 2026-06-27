@@ -1,6 +1,6 @@
-import { composeAbortSignals, timeoutSignalBundle } from '../abort.js';
-import { DEFAULT_CODEX_REFRESH_TIMEOUT_MS } from '../constants.js';
-import { FlueCodexError, isFlueCodexError } from '../errors.js';
+import { composeAbortSignals, timeoutSignalBundle } from '../support/abort.js';
+import { DEFAULT_CODEX_REFRESH_TIMEOUT_MS } from './auth.constants.js';
+import { FlueCodexError, isFlueCodexError } from '../support/flue-codex-error.js';
 import { resolveCodexAccountId } from './account-id.js';
 import { getAccessToken, getRefreshToken, readCodexAuthFile } from './auth-file.js';
 import { persistRefreshedCodexAuth } from './auth-writer.js';
@@ -11,7 +11,7 @@ import type {
 	CodexOAuthCredentials,
 	CodexTokenRefreshResult,
 	ResolveCodexCredentialsOptions,
-} from './types.js';
+} from './auth.types.js';
 
 export async function resolveCodexCredentials(
 	options: ResolveCodexCredentialsOptions = {},

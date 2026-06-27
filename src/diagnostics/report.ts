@@ -1,4 +1,4 @@
-import type { FlueCodexErrorCode } from '../errors.js';
+import type { FlueCodexErrorCode } from '../support/flue-codex-error.js';
 
 export type CodexDoctorStepStatus = 'pass' | 'fail' | 'skip';
 

@@ -5,7 +5,7 @@ export type {
 	CodexProviderRegistrationResult,
 	CreateCodexProviderOptions,
 	RegisterCodexProviderOptions,
-} from './provider/types.js';
+} from './provider/provider.types.js';
 
 export { doctorCodexProvider } from './diagnostics/doctor.js';
 export { runCodexLiveSmoke } from './diagnostics/smoke.js';
@@ -17,18 +17,15 @@ export type {
 	CodexLiveSmokeReport,
 } from './diagnostics/report.js';
 
-export {
-	discoverCodexModels,
-	modelOverridesForFlue,
-	normalizeCodexModel,
-	selectDefaultCodexModel,
-} from './codex/models.js';
-export type { CodexDiscoveredModel, DiscoverCodexModelsOptions, RawCodexModel } from './codex/types.js';
+export { discoverCodexModels } from './codex/model-discovery.js';
+export { normalizeCodexModel, selectDefaultCodexModel } from './codex/model-normalization.js';
+export { modelOverridesForFlue } from './codex/model-overrides.js';
+export type { CodexDiscoveredModel, DiscoverCodexModelsOptions, RawCodexModel } from './codex/codex.types.js';
 
 export { resolveCodexCredentials } from './auth/resolve-credentials.js';
 export { readCodexAuthFile, resolveCodexAuthPath } from './auth/auth-file.js';
 export { getJwtCodexAccountId, getJwtExpiration, decodeJwtPayload } from './auth/jwt.js';
-export type { CodexAuthJson, CodexOAuthCredentials, ResolveCodexCredentialsOptions } from './auth/types.js';
+export type { CodexAuthJson, CodexOAuthCredentials, ResolveCodexCredentialsOptions } from './auth/auth.types.js';
 
-export { FlueCodexError, isFlueCodexError } from './errors.js';
-export type { FlueCodexErrorCode } from './errors.js';
+export { FlueCodexError, isFlueCodexError } from './support/flue-codex-error.js';
+export type { FlueCodexErrorCode } from './support/flue-codex-error.js';

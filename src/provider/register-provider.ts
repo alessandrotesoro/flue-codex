@@ -1,7 +1,7 @@
 import { registerProvider } from '@flue/runtime';
-import { FlueCodexError } from '../errors.js';
+import { FlueCodexError } from '../support/flue-codex-error.js';
 import { createCodexProvider } from './create-provider.js';
-import type { CodexProviderRegistrationResult, RegisterCodexProviderOptions } from './types.js';
+import type { CodexProviderRegistrationResult, RegisterCodexProviderOptions } from './provider.types.js';
 
 export async function registerCodexProvider(
 	options: RegisterCodexProviderOptions = {},

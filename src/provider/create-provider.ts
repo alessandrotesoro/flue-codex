@@ -1,10 +1,13 @@
 import type { HttpProviderRegistration } from '@flue/runtime';
-import { DEFAULT_CODEX_BACKEND_BASE_URL, OPENAI_CODEX_PROVIDER_ID, OPENAI_CODEX_RESPONSES_API } from '../constants.js';
+import { DEFAULT_CODEX_BACKEND_BASE_URL } from '../codex/codex.constants.js';
+import { OPENAI_CODEX_PROVIDER_ID, OPENAI_CODEX_RESPONSES_API } from './provider.constants.js';
 import { resolveCodexCredentials } from '../auth/resolve-credentials.js';
-import type { CodexOAuthCredentials } from '../auth/types.js';
-import { discoverCodexModels, modelOverridesForFlue, selectDefaultCodexModel } from '../codex/models.js';
-import type { CodexDiscoveredModel } from '../codex/types.js';
-import type { CodexProviderDefinition, CreateCodexProviderOptions } from './types.js';
+import type { CodexOAuthCredentials } from '../auth/auth.types.js';
+import { discoverCodexModels } from '../codex/model-discovery.js';
+import { modelOverridesForFlue } from '../codex/model-overrides.js';
+import { selectDefaultCodexModel } from '../codex/model-normalization.js';
+import type { CodexDiscoveredModel } from '../codex/codex.types.js';
+import type { CodexProviderDefinition, CreateCodexProviderOptions } from './provider.types.js';
 
 export async function createCodexProvider(options: CreateCodexProviderOptions = {}): Promise<CodexProviderDefinition> {
 	const { credentials, models, baseUrl } = await resolveCodexProviderInputs(options);
@@ -26,6 +29,7 @@ export async function resolveCodexProviderInputs(options: CreateCodexProviderOpt
 		clientVersion: options.clientVersion,
 		timeoutMs: options.timeoutMs,
 		fetchImpl: options.fetchImpl,
+		env: options.env,
 	});
 
 	return { credentials, models, baseUrl };

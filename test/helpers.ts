@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
-import type { CodexAuthJson } from '../src/auth/types.js';
+import type { CodexAuthJson } from '../src/auth/auth.types.js';
 
 export function makeJwt(payload: Record<string, unknown>): string {
 	return [

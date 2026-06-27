@@ -1,11 +1,11 @@
 import { chmod, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { FlueCodexError } from '../errors.js';
-import { isRecord } from '../is-record.js';
+import { FlueCodexError } from '../support/flue-codex-error.js';
+import { isRecord } from '../support/is-record.js';
 import { resolveCodexAccountId } from './account-id.js';
 import { getAccessToken } from './auth-file.js';
-import type { CodexAuthJson, CodexTokenRefreshResult } from './types.js';
+import type { CodexAuthJson, CodexTokenRefreshResult } from './auth.types.js';
 
 export interface PersistRefreshedAuthOptions {
 	authPath: string;

@@ -1,9 +1,9 @@
-import { CODEX_OAUTH_CLIENT_ID, CODEX_TOKEN_URL } from '../constants.js';
-import { FlueCodexError, errorToReportMessage } from '../errors.js';
-import { isRecord } from '../is-record.js';
+import { CODEX_OAUTH_CLIENT_ID, CODEX_TOKEN_URL } from './auth.constants.js';
+import { FlueCodexError, errorToReportMessage } from '../support/flue-codex-error.js';
+import { isRecord } from '../support/is-record.js';
 import { codexHttpFailureMessage } from '../codex/http.js';
 import { getJwtCodexAccountId, getJwtExpiration } from './jwt.js';
-import type { CodexTokenRefreshResult } from './types.js';
+import type { CodexTokenRefreshResult } from './auth.types.js';
 
 export interface RefreshCodexTokenOptions {
 	fetchImpl?: typeof fetch | undefined;

@@ -1,5 +1,5 @@
-import { FlueCodexError } from '../errors.js';
-import type { CodexAuthJson } from './types.js';
+import { FlueCodexError } from '../support/flue-codex-error.js';
+import type { CodexAuthJson } from './auth.types.js';
 import { getJwtCodexAccountId } from './jwt.js';
 
 export interface AccountResolution {

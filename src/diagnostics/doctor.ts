@@ -1,7 +1,7 @@
 import { registerProvider } from '@flue/runtime';
-import { selectDefaultCodexModel } from '../codex/models.js';
-import { OPENAI_CODEX_PROVIDER_ID } from '../constants.js';
-import { errorToReportMessage, isFlueCodexError } from '../errors.js';
+import { selectDefaultCodexModel } from '../codex/model-normalization.js';
+import { OPENAI_CODEX_PROVIDER_ID } from '../provider/provider.constants.js';
+import { errorToReportMessage, isFlueCodexError } from '../support/flue-codex-error.js';
 import { buildCodexProviderDefinition, resolveCodexProviderInputs } from '../provider/create-provider.js';
 import { runCodexLiveSmoke } from './smoke.js';
 import type { CodexDoctorReport, CodexDoctorStep, CodexLiveSmokeReport } from './report.js';

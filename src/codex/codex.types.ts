@@ -27,4 +27,5 @@ export interface DiscoverCodexModelsOptions {
 	timeoutMs?: number | undefined;
 	fetchImpl?: typeof fetch | undefined;
 	signal?: AbortSignal | undefined;
+	env?: NodeJS.ProcessEnv | undefined;
 }

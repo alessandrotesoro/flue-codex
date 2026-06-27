@@ -1,6 +1,6 @@
 import type { HttpProviderRegistration } from '@flue/runtime';
-import type { CodexDiscoveredModel, DiscoverCodexModelsOptions } from '../codex/types.js';
-import type { ResolveCodexCredentialsOptions } from '../auth/types.js';
+import type { CodexDiscoveredModel, DiscoverCodexModelsOptions } from '../codex/codex.types.js';
+import type { ResolveCodexCredentialsOptions } from '../auth/auth.types.js';
 
 export interface CreateCodexProviderOptions
 	extends Omit<ResolveCodexCredentialsOptions, 'fetchImpl'>,

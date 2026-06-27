@@ -1,7 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { getAccessToken, readCodexAuthFile, resolveCodexAuthPath } from '../src/auth/auth-file.js';
-import type { FlueCodexError } from '../src/errors.js';
+import type { FlueCodexError } from '../src/support/flue-codex-error.js';
 import { makeAuth, makeTempAuth } from './helpers.js';
 
 describe('Codex auth file', () => {

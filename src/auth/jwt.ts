@@ -1,5 +1,5 @@
-import { CODEX_ACCOUNT_CLAIM } from '../constants.js';
-import { isRecord } from '../is-record.js';
+import { CODEX_ACCOUNT_CLAIM } from './auth.constants.js';
+import { isRecord } from '../support/is-record.js';
 
 export interface JwtPayload {
 	exp?: unknown;

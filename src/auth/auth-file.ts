@@ -1,9 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { FlueCodexError } from '../errors.js';
-import { isRecord } from '../is-record.js';
-import type { CodexAuthJson, CodexAuthPathOptions } from './types.js';
+import { FlueCodexError } from '../support/flue-codex-error.js';
+import { isRecord } from '../support/is-record.js';
+import type { CodexAuthJson, CodexAuthPathOptions } from './auth.types.js';
 
 export function resolveCodexAuthPath(options: CodexAuthPathOptions = {}): string {
 	if (options.authPath) return options.authPath;

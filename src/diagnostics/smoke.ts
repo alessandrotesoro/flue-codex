@@ -1,7 +1,7 @@
 import { defineAgent } from '@flue/runtime';
-import { timeoutSignalBundle, withAbortSignal } from '../abort.js';
-import { DEFAULT_CODEX_LIVE_SMOKE_TIMEOUT_MS } from '../constants.js';
-import { errorToReportMessage } from '../errors.js';
+import { timeoutSignalBundle, withAbortSignal } from '../support/abort.js';
+import { DEFAULT_CODEX_LIVE_SMOKE_TIMEOUT_MS } from './diagnostics.constants.js';
+import { errorToReportMessage } from '../support/flue-codex-error.js';
 import type { CodexLiveSmokeReport } from './report.js';
 
 export interface RunCodexLiveSmokeOptions {
