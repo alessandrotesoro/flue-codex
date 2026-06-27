@@ -1,11 +1,11 @@
-# flue-codex
+# @sematico/flue-codex
 
 Use local Codex CLI subscription auth as a Flue provider. This lets Flue agents call Codex models without an OpenAI API key.
 
 ## Install
 
 ```bash
-pnpm add flue-codex @flue/runtime
+pnpm add @sematico/flue-codex @flue/runtime
 ```
 
 Log in with Codex first:
@@ -14,13 +14,13 @@ Log in with Codex first:
 codex login
 ```
 
-`flue-codex` reads `~/.codex/auth.json`, refreshes stale OAuth tokens, discovers the account's available Codex models, and registers them with Flue as `openai-codex/*`.
+`@sematico/flue-codex` reads `~/.codex/auth.json`, refreshes stale OAuth tokens, discovers the account's available Codex models, and registers them with Flue as `openai-codex/*`.
 
 ## Usage
 
 ```ts
 import { defineAgent } from '@flue/runtime';
-import { registerCodexProvider } from 'flue-codex';
+import { registerCodexProvider } from '@sematico/flue-codex';
 
 await registerCodexProvider();
 
@@ -46,9 +46,6 @@ pnpm exec flue-codex-doctor --live
 - `doctorCodexProvider(options?)` checks auth, model discovery, provider construction, and optional live completion.
 - `runCodexLiveSmoke(options)` runs the tiny live completion check.
 
-## Notes
+## License
 
-- No OpenAI API key is required.
-- This uses Codex as the subscription-backed model provider, not as a local machine harness.
-- Treat returned provider definitions as secret-bearing objects because `registration.apiKey` contains the active bearer token.
-- Only override `baseUrl` or `tokenUrl` with trusted endpoints; those requests carry access or refresh credentials.
+MIT. See [LICENSE](./LICENSE).

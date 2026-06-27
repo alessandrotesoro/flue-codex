@@ -22,6 +22,6 @@ describe('package exports', () => {
   it('does not pretend to support require()', () => {
     const require = createRequire(import.meta.url);
 
-    expect(() => require('flue-codex')).toThrow();
+    expect(() => require('@sematico/flue-codex')).toThrow();
   });
 });

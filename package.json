@@ -1,5 +1,5 @@
 {
-  "name": "flue-codex",
+  "name": "@sematico/flue-codex",
   "version": "0.1.0",
   "description": "Register subscription-backed OpenAI Codex models with Flue using local Codex CLI auth.",
   "type": "module",
@@ -17,6 +17,7 @@
   },
   "files": [
     "dist",
+    "LICENSE",
     "README.md",
     "docs/*.md",
     "examples"
@@ -35,6 +36,9 @@
     "provider"
   ],
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
     "@flue/runtime": "^1.0.0-beta.7"
   },

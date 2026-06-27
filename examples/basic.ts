@@ -1,4 +1,4 @@
-import { registerCodexProvider } from 'flue-codex';
+import { registerCodexProvider } from '@sematico/flue-codex';
 
 const provider = await registerCodexProvider();
 

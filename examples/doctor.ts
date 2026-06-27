@@ -1,4 +1,4 @@
-import { doctorCodexProvider } from 'flue-codex';
+import { doctorCodexProvider } from '@sematico/flue-codex';
 
 const report = await doctorCodexProvider({
   liveSmoke: process.env.FLUE_CODEX_LIVE_SMOKE === '1',
