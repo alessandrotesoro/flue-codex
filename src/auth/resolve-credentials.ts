@@ -7,7 +7,6 @@ import { persistRefreshedCodexAuth } from './auth-writer.js';
 import { assessTokenFreshness } from './token-freshness.js';
 import { refreshCodexToken } from './token-refresh.js';
 import type {
-	CodexAuthJson,
 	CodexOAuthCredentials,
 	CodexTokenRefreshResult,
 	ResolveCodexCredentialsOptions,
@@ -75,9 +74,8 @@ export async function resolveCodexCredentials(
 		);
 	}
 
-	let updatedAuth: CodexAuthJson;
 	try {
-		updatedAuth = await persistRefreshedCodexAuth({
+		await persistRefreshedCodexAuth({
 			authPath,
 			expectedAccountId: account.accountId,
 			expectedAccessToken: accessToken,
