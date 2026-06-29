@@ -31,6 +31,23 @@ describe('Codex account id resolution', () => {
 		expect(resolveCodexAccountId(auth, accessToken).accountId).toBe('acct-custom');
 	});
 
+	it('uses the token account claim that matches the stored account id when multiple claims exist', () => {
+		const accessToken = makeJwt({
+			exp: Math.floor(Date.now() / 1000) + 3600,
+			'https://auth.example.test/other-auth': {
+				chatgpt_account_id: 'acct-other',
+			},
+			'https://auth.example.test/current-auth': {
+				chatgpt_account_id: 'acct-current',
+			},
+		});
+		const auth = makeAuth({
+			tokens: { access_token: accessToken, refresh_token: 'r', account_id: 'acct-current' },
+		});
+
+		expect(resolveCodexAccountId(auth, accessToken).accountId).toBe('acct-current');
+	});
+
 	it('fails when only the stored account id exists because the transport needs the JWT claim', () => {
 		const accessToken = makeJwt({ exp: Math.floor(Date.now() / 1000) + 3600 });
 		const auth = makeAuth({ tokens: { access_token: accessToken, refresh_token: 'r', account_id: 'acct-stored' } });

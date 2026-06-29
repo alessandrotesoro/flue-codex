@@ -7,7 +7,7 @@ export interface CreateCodexProviderOptions
 		Partial<
 			Pick<
 				DiscoverCodexModelsOptions,
-				'baseUrl' | 'clientVersion' | 'timeoutMs' | 'execFileImpl' | 'readFileImpl' | 'runtimeCommandTimeoutMs'
+				'baseUrl' | 'clientVersion' | 'timeoutMs' | 'runtimeCommandTimeoutMs'
 			>
 		> {
 	fetchImpl?: typeof fetch | undefined;

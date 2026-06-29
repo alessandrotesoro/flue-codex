@@ -5,20 +5,9 @@ import { errorToReportMessage, isFlueCodexError } from '../support/flue-codex-er
 import { buildCodexProviderDefinition, resolveCodexProviderInputs } from '../provider/create-provider.js';
 import { runCodexLiveSmoke } from './smoke.js';
 import type { CodexDoctorReport, CodexDoctorStep, CodexLiveSmokeReport } from './report.js';
-import type { ExecFileImpl, ReadTextFileImpl } from '../codex/runtime-config.js';
+import type { CreateCodexProviderOptions } from '../provider/provider.types.js';
 
-export interface DoctorCodexProviderOptions {
-	authPath?: string | undefined;
-	codexHome?: string | undefined;
-	env?: NodeJS.ProcessEnv | undefined;
-	forceRefresh?: boolean | undefined;
-	baseUrl?: string | undefined;
-	clientVersion?: string | undefined;
-	execFileImpl?: ExecFileImpl | undefined;
-	readFileImpl?: ReadTextFileImpl | undefined;
-	runtimeCommandTimeoutMs?: number | undefined;
-	timeoutMs?: number | undefined;
-	fetchImpl?: typeof fetch | undefined;
+export interface DoctorCodexProviderOptions extends CreateCodexProviderOptions {
 	liveSmoke?: boolean | undefined;
 	liveSmokeModel?: string | undefined;
 	liveSmokePrompt?: string | undefined;

@@ -16,9 +16,12 @@ export interface CodexRuntimeConfigOptions {
 	clientVersion?: string | undefined;
 	codexHome?: string | undefined;
 	env?: NodeJS.ProcessEnv | undefined;
+	runtimeCommandTimeoutMs?: number | undefined;
+}
+
+interface CodexRuntimeResolverOptions extends CodexRuntimeConfigOptions {
 	execFileImpl?: ExecFileImpl | undefined;
 	readFileImpl?: ReadTextFileImpl | undefined;
-	runtimeCommandTimeoutMs?: number | undefined;
 }
 
 export type ExecFileImpl = (
@@ -30,9 +33,11 @@ export type ExecFileImpl = (
 export type ReadTextFileImpl = (path: string, encoding: BufferEncoding) => Promise<string>;
 
 const DEFAULT_RUNTIME_COMMAND_TIMEOUT_MS = 15_000;
+const DEFAULT_DOCTOR_COMMAND_TIMEOUT_MS = 60_000;
 
+export function resolveCodexRuntimeConfig(options?: CodexRuntimeConfigOptions): Promise<CodexRuntimeConfig>;
 export async function resolveCodexRuntimeConfig(
-	options: CodexRuntimeConfigOptions = {},
+	options: CodexRuntimeResolverOptions = {},
 ): Promise<CodexRuntimeConfig> {
 	const [baseUrl, clientVersion] = await Promise.all([
 		resolveCodexBackendBaseUrl(options),
@@ -42,7 +47,8 @@ export async function resolveCodexRuntimeConfig(
 	return { baseUrl, clientVersion };
 }
 
-export async function resolveCodexClientVersion(options: CodexRuntimeConfigOptions = {}): Promise<string> {
+export function resolveCodexClientVersion(options?: CodexRuntimeConfigOptions): Promise<string>;
+export async function resolveCodexClientVersion(options: CodexRuntimeResolverOptions = {}): Promise<string> {
 	const env = options.env ?? process.env;
 	const explicit = nonEmptyString(options.clientVersion) ?? nonEmptyString(env.CODEX_CLIENT_VERSION);
 	if (explicit) return explicit;
@@ -61,14 +67,17 @@ export async function resolveCodexClientVersion(options: CodexRuntimeConfigOptio
 	);
 }
 
-export async function resolveCodexBackendBaseUrl(options: CodexRuntimeConfigOptions = {}): Promise<string> {
+export function resolveCodexBackendBaseUrl(options?: CodexRuntimeConfigOptions): Promise<string>;
+export async function resolveCodexBackendBaseUrl(options: CodexRuntimeResolverOptions = {}): Promise<string> {
 	const env = options.env ?? process.env;
 	const explicit = nonEmptyString(options.baseUrl) ?? nonEmptyString(env.CODEX_API_BASE_URL);
 	if (explicit) return normalizeCodexBackendBaseUrl(explicit);
 
-	const doctor = await runCodexCommand(['doctor', '--json', '--summary', '--no-color', '--ascii'], options).catch(
-		() => undefined,
-	);
+	const doctor = await runCodexCommand(
+		['doctor', '--json', '--summary', '--no-color', '--ascii'],
+		options,
+		DEFAULT_DOCTOR_COMMAND_TIMEOUT_MS,
+	).catch(() => undefined);
 	const baseUrl = doctor ? safeParseDoctorBackendBaseUrl(doctor.stdout) : undefined;
 	if (baseUrl) return normalizeCodexBackendBaseUrl(baseUrl);
 
@@ -85,7 +94,7 @@ export function resolveCodexHome(options: Pick<CodexRuntimeConfigOptions, 'codex
 
 function readCachedClientVersion(
 	codexHome: string,
-	options: Pick<CodexRuntimeConfigOptions, 'readFileImpl'>,
+	options: Pick<CodexRuntimeResolverOptions, 'readFileImpl'>,
 ): Promise<string | undefined> {
 	const reader = options.readFileImpl ?? readFile;
 	return reader(join(codexHome, 'models_cache.json'), 'utf8')
@@ -98,12 +107,13 @@ function readCachedClientVersion(
 
 function runCodexCommand(
 	args: readonly string[],
-	options: Pick<CodexRuntimeConfigOptions, 'env' | 'execFileImpl' | 'runtimeCommandTimeoutMs'>,
+	options: Pick<CodexRuntimeResolverOptions, 'codexHome' | 'env' | 'execFileImpl' | 'runtimeCommandTimeoutMs'>,
+	defaultTimeoutMs = DEFAULT_RUNTIME_COMMAND_TIMEOUT_MS,
 ): Promise<{ stdout: string; stderr: string }> {
 	const exec = options.execFileImpl ?? defaultExecFile;
 	return exec('codex', args, {
-		env: commandEnv(options.env),
-		timeout: options.runtimeCommandTimeoutMs ?? DEFAULT_RUNTIME_COMMAND_TIMEOUT_MS,
+		env: commandEnv(options.env, options.codexHome),
+		timeout: options.runtimeCommandTimeoutMs ?? defaultTimeoutMs,
 		windowsHide: true,
 	}).catch((error: unknown) => {
 		const output = commandOutputFromError(error);
@@ -112,8 +122,8 @@ function runCodexCommand(
 	});
 }
 
-function commandEnv(env: NodeJS.ProcessEnv | undefined): NodeJS.ProcessEnv {
-	return env ? { ...process.env, ...env } : process.env;
+function commandEnv(env: NodeJS.ProcessEnv | undefined, codexHome: string | undefined): NodeJS.ProcessEnv {
+	return codexHome ? { ...process.env, ...env, CODEX_HOME: codexHome } : { ...process.env, ...env };
 }
 
 function defaultExecFile(

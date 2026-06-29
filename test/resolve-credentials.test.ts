@@ -1,7 +1,8 @@
+import { writeFileSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { describe, expect, it, vi } from 'vitest';
 import { resolveCodexCredentials } from '../src/auth/resolve-credentials.js';
-import { makeAccessToken, makeAuth, makeTempAuth, mockFetch, mockJsonFetch } from './helpers.js';
+import { makeAccessToken, makeAuth, makeJwt, makeTempAuth, mockFetch, mockJsonFetch } from './helpers.js';
 
 describe('resolveCodexCredentials', () => {
 	it('refreshes expired credentials, persists them, and passes an abort signal', async () => {
@@ -159,5 +160,57 @@ describe('resolveCodexCredentials', () => {
 			accountId: 'acct-test',
 			refreshed: true,
 		});
+	});
+
+	it('adopts same-account auth refreshed by a concurrent caller after stale metadata failure', async () => {
+		const staleAccess = makeJwt({
+			client_id: 'client-from-stale-token',
+			exp: 1,
+			'https://api.openai.com/auth': {
+				chatgpt_account_id: 'acct-test',
+			},
+		});
+		const concurrentAccess = makeAccessToken('acct-test');
+		const { authPath } = await makeTempAuth(
+			makeAuth({
+				tokens: {
+					access_token: staleAccess,
+					refresh_token: 'old-refresh',
+					account_id: 'acct-test',
+				},
+			}),
+		);
+		const fetchImpl = mockFetch(async () => {
+			throw new Error('metadata failure should happen before fetch');
+		});
+
+		const credentials = await resolveCodexCredentials({
+			authPath,
+			get fetchImpl() {
+				writeFileSync(
+					authPath,
+					`${JSON.stringify(
+						makeAuth({
+							tokens: {
+								access_token: concurrentAccess,
+								refresh_token: 'concurrent-refresh',
+								account_id: 'acct-test',
+							},
+						}),
+						null,
+						2,
+					)}\n`,
+				);
+				return fetchImpl;
+			},
+		});
+
+		expect(credentials).toMatchObject({
+			accessToken: concurrentAccess,
+			refreshToken: 'concurrent-refresh',
+			accountId: 'acct-test',
+			refreshed: true,
+		});
+		expect(vi.mocked(fetchImpl).mock.calls).toHaveLength(0);
 	});
 });

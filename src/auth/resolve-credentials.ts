@@ -56,7 +56,7 @@ export async function resolveCodexCredentials(
 			signal: refreshSignal.signal,
 		});
 	} catch (error) {
-		if (!isFlueCodexError(error) || error.code !== 'token_refresh_failed') throw error;
+		if (!isRecoverableRefreshError(error)) throw error;
 		return await adoptRefreshedCodexCredentials({
 			authPath,
 			expectedAccountId: account.accountId,
@@ -128,4 +128,10 @@ async function adoptRefreshedCodexCredentials(input: {
 	}
 
 	throw input.cause;
+}
+
+function isRecoverableRefreshError(error: unknown): error is FlueCodexError {
+	return (
+		isFlueCodexError(error) && (error.code === 'token_refresh_failed' || error.code === 'unsupported_auth_shape')
+	);
 }
