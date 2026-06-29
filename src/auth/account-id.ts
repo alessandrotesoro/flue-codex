@@ -8,7 +8,7 @@ export interface AccountResolution {
 
 export function resolveCodexAccountId(auth: CodexAuthJson, accessToken: string): AccountResolution {
 	const storedAccountId = typeof auth.tokens?.account_id === 'string' ? auth.tokens.account_id : undefined;
-	const tokenAccountId = getJwtCodexAccountId(accessToken);
+	const tokenAccountId = getJwtCodexAccountId(accessToken, storedAccountId) ?? getJwtCodexAccountId(accessToken);
 
 	if (!storedAccountId && !tokenAccountId) {
 		throw new FlueCodexError(

@@ -37,6 +37,7 @@ export interface ResolveCodexCredentialsOptions extends CodexAuthPathOptions {
 	now?: Date | undefined;
 	fetchImpl?: typeof fetch | undefined;
 	tokenUrl?: string | undefined;
+	clientId?: string | undefined;
 	signal?: AbortSignal | undefined;
 	refreshTimeoutMs?: number | undefined;
 }

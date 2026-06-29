@@ -4,6 +4,11 @@ import { modelOverridesForFlue } from '../src/codex/model-overrides.js';
 import { normalizeCodexModel } from '../src/codex/model-normalization.js';
 import { mockFetch, mockJsonFetch } from './helpers.js';
 
+const TEST_RUNTIME = {
+	baseUrl: 'https://chatgpt.example.test/backend-api',
+	clientVersion: 'test-version',
+};
+
 describe('Codex model discovery', () => {
 	it('normalizes only list-visible API-supported models', () => {
 		expect(
@@ -37,7 +42,7 @@ describe('Codex model discovery', () => {
 		const models = await discoverCodexModels({
 			accessToken: 'access',
 			accountId: 'acct',
-			baseUrl: '[redacted-codex-backend-url]/',
+			baseUrl: 'https://chatgpt.example.test/backend-api/',
 			clientVersion: 'test-version',
 			fetchImpl,
 		});
@@ -47,7 +52,7 @@ describe('Codex model discovery', () => {
 		const firstCall = vi.mocked(fetchImpl).mock.calls.at(0);
 		if (!firstCall) throw new Error('Expected Codex model discovery to call fetch.');
 		const [url, init] = firstCall;
-		expect(String(url)).toBe('[redacted-codex-backend-url]/codex/models?client_version=test-version');
+		expect(String(url)).toBe('https://chatgpt.example.test/backend-api/codex/models?client_version=test-version');
 		expect((init?.headers as Record<string, string>)['chatgpt-account-id']).toBe('acct');
 		expect((init?.headers as Record<string, string>).originator).toBe('pi');
 	});
@@ -60,7 +65,7 @@ describe('Codex model discovery', () => {
 		await discoverCodexModels({
 			accessToken: 'access',
 			accountId: 'acct',
-			baseUrl: '[redacted-codex-backend-url]/',
+			baseUrl: 'https://chatgpt.example.test/backend-api/',
 			env: {
 				CODEX_CLIENT_VERSION: 'env-version',
 			} as NodeJS.ProcessEnv,
@@ -70,13 +75,15 @@ describe('Codex model discovery', () => {
 		const firstCall = vi.mocked(fetchImpl).mock.calls.at(0);
 		if (!firstCall) throw new Error('Expected Codex model discovery to call fetch.');
 		const [url] = firstCall;
-		expect(String(url)).toBe('[redacted-codex-backend-url]/codex/models?client_version=env-version');
+		expect(String(url)).toBe('https://chatgpt.example.test/backend-api/codex/models?client_version=env-version');
 	});
 
 	it('fails on empty usable model lists', async () => {
 		const fetchImpl = mockJsonFetch({ models: [{ slug: 'hidden', visibility: 'hide' }] });
 
-		await expect(discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl })).rejects.toMatchObject({
+		await expect(
+			discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl, ...TEST_RUNTIME }),
+		).rejects.toMatchObject({
 			code: 'empty_model_list',
 		});
 	});
@@ -84,7 +91,9 @@ describe('Codex model discovery', () => {
 	it.each([401, 403])('maps HTTP %i to model_access_denied', async (status) => {
 		const fetchImpl = mockJsonFetch({ error: 'denied' }, { status });
 
-		await expect(discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl })).rejects.toMatchObject({
+		await expect(
+			discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl, ...TEST_RUNTIME }),
+		).rejects.toMatchObject({
 			code: 'model_access_denied',
 			status,
 		});
@@ -95,7 +104,9 @@ describe('Codex model discovery', () => {
 			async () => new Response('refresh_token=secret-refresh', { status: 500, statusText: 'Oops' }),
 		);
 
-		await expect(discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl })).rejects.toMatchObject({
+		await expect(
+			discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl, ...TEST_RUNTIME }),
+		).rejects.toMatchObject({
 			code: 'model_discovery_failed',
 			message: expect.not.stringContaining('secret-refresh'),
 		});
@@ -111,7 +122,7 @@ describe('Codex model discovery', () => {
 		);
 
 		await expect(
-			discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl, timeoutMs: 1 }),
+			discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl, timeoutMs: 1, ...TEST_RUNTIME }),
 		).rejects.toMatchObject({
 			code: 'model_discovery_failed',
 		});
@@ -134,6 +145,7 @@ describe('Codex model discovery', () => {
 				fetchImpl,
 				signal: controller.signal,
 				timeoutMs: 1,
+				...TEST_RUNTIME,
 			}),
 		).rejects.toMatchObject({
 			code: 'model_discovery_failed',
@@ -143,7 +155,9 @@ describe('Codex model discovery', () => {
 	it('maps invalid JSON to model_discovery_failed', async () => {
 		const fetchImpl = mockFetch(async () => new Response('{', { status: 200 }));
 
-		await expect(discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl })).rejects.toMatchObject({
+		await expect(
+			discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl, ...TEST_RUNTIME }),
+		).rejects.toMatchObject({
 			code: 'model_discovery_failed',
 		});
 	});
@@ -153,7 +167,9 @@ describe('Codex model discovery', () => {
 			throw new Error('network down');
 		});
 
-		await expect(discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl })).rejects.toMatchObject({
+		await expect(
+			discoverCodexModels({ accessToken: 'a', accountId: 'acct', fetchImpl, ...TEST_RUNTIME }),
+		).rejects.toMatchObject({
 			code: 'model_discovery_failed',
 		});
 	});

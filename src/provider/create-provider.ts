@@ -1,11 +1,11 @@
 import type { HttpProviderRegistration } from '@flue/runtime';
-import { DEFAULT_CODEX_BACKEND_BASE_URL } from '../codex/codex.constants.js';
 import { OPENAI_CODEX_PROVIDER_ID, OPENAI_CODEX_RESPONSES_API } from './provider.constants.js';
 import { resolveCodexCredentials } from '../auth/resolve-credentials.js';
 import type { CodexOAuthCredentials } from '../auth/auth.types.js';
 import { discoverCodexModels } from '../codex/model-discovery.js';
 import { modelOverridesForFlue } from '../codex/model-overrides.js';
 import { selectDefaultCodexModel } from '../codex/model-normalization.js';
+import { resolveCodexRuntimeConfig } from '../codex/runtime-config.js';
 import type { CodexDiscoveredModel } from '../codex/codex.types.js';
 import type { CodexProviderDefinition, CreateCodexProviderOptions } from './provider.types.js';
 
@@ -21,12 +21,12 @@ export async function resolveCodexProviderInputs(options: CreateCodexProviderOpt
 }> {
 	const credentials = await resolveCodexCredentials(options);
 
-	const baseUrl = options.baseUrl ?? DEFAULT_CODEX_BACKEND_BASE_URL;
+	const { baseUrl, clientVersion } = await resolveCodexRuntimeConfig(options);
 	const models = await discoverCodexModels({
 		accessToken: credentials.accessToken,
 		accountId: credentials.accountId,
 		baseUrl,
-		clientVersion: options.clientVersion,
+		clientVersion,
 		timeoutMs: options.timeoutMs,
 		fetchImpl: options.fetchImpl,
 		env: options.env,
@@ -38,12 +38,11 @@ export async function resolveCodexProviderInputs(options: CreateCodexProviderOpt
 export function buildCodexProviderDefinition(input: {
 	credentials: CodexOAuthCredentials;
 	models: CodexDiscoveredModel[];
-	baseUrl?: string | undefined;
+	baseUrl: string;
 }): CodexProviderDefinition {
-	const baseUrl = input.baseUrl ?? DEFAULT_CODEX_BACKEND_BASE_URL;
 	const registration: HttpProviderRegistration = {
 		api: OPENAI_CODEX_RESPONSES_API as NonNullable<HttpProviderRegistration['api']>,
-		baseUrl,
+		baseUrl: input.baseUrl,
 		apiKey: input.credentials.accessToken,
 		models: modelOverridesForFlue(input.models),
 	};

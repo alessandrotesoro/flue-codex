@@ -15,6 +15,8 @@ export function makeJwt(payload: Record<string, unknown>): string {
 
 export function makeAccessToken(accountId = 'acct-test', exp = Math.floor(Date.now() / 1000) + 3600): string {
 	return makeJwt({
+		iss: 'https://auth.example.test',
+		client_id: 'client-test',
 		exp,
 		'https://api.openai.com/auth': {
 			chatgpt_account_id: accountId,

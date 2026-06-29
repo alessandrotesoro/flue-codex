@@ -18,7 +18,11 @@ describe('resolveCodexCredentials', () => {
 		);
 		const fetchImpl = mockJsonFetch({ access_token: refreshedAccess, refresh_token: 'new-refresh' });
 
-		const credentials = await resolveCodexCredentials({ authPath, fetchImpl });
+		const credentials = await resolveCodexCredentials({
+			authPath,
+			fetchImpl,
+			tokenUrl: 'https://auth.example.test/oauth/token',
+		});
 
 		expect(credentials.refreshed).toBe(true);
 		expect(credentials.accessToken).toBe(refreshedAccess);
@@ -58,7 +62,9 @@ describe('resolveCodexCredentials', () => {
 		);
 		const fetchImpl = mockJsonFetch({ access_token: makeAccessToken('acct-other'), refresh_token: 'new-refresh' });
 
-		await expect(resolveCodexCredentials({ authPath, fetchImpl })).rejects.toMatchObject({
+		await expect(
+			resolveCodexCredentials({ authPath, fetchImpl, tokenUrl: 'https://auth.example.test/oauth/token' }),
+		).rejects.toMatchObject({
 			code: 'account_id_mismatch',
 		});
 	});
@@ -93,7 +99,11 @@ describe('resolveCodexCredentials', () => {
 			return new Response('invalid_grant', { status: 400, statusText: 'Bad Request' });
 		});
 
-		const credentials = await resolveCodexCredentials({ authPath, fetchImpl });
+		const credentials = await resolveCodexCredentials({
+			authPath,
+			fetchImpl,
+			tokenUrl: 'https://auth.example.test/oauth/token',
+		});
 
 		expect(credentials).toMatchObject({
 			accessToken: concurrentAccess,
@@ -137,7 +147,11 @@ describe('resolveCodexCredentials', () => {
 			});
 		});
 
-		const credentials = await resolveCodexCredentials({ authPath, fetchImpl });
+		const credentials = await resolveCodexCredentials({
+			authPath,
+			fetchImpl,
+			tokenUrl: 'https://auth.example.test/oauth/token',
+		});
 
 		expect(credentials).toMatchObject({
 			accessToken: concurrentAccess,

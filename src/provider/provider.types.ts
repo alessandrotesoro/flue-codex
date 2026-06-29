@@ -4,7 +4,12 @@ import type { ResolveCodexCredentialsOptions } from '../auth/auth.types.js';
 
 export interface CreateCodexProviderOptions
 	extends Omit<ResolveCodexCredentialsOptions, 'fetchImpl'>,
-		Partial<Pick<DiscoverCodexModelsOptions, 'baseUrl' | 'clientVersion' | 'timeoutMs'>> {
+		Partial<
+			Pick<
+				DiscoverCodexModelsOptions,
+				'baseUrl' | 'clientVersion' | 'timeoutMs' | 'execFileImpl' | 'readFileImpl' | 'runtimeCommandTimeoutMs'
+			>
+		> {
 	fetchImpl?: typeof fetch | undefined;
 }
 

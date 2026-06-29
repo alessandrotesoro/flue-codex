@@ -2,6 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { doctorCodexProvider } from '../src/index.js';
 import { makeAuth, makeTempAuth, mockJsonFetch } from './helpers.js';
 
+const TEST_RUNTIME = {
+	baseUrl: 'https://chatgpt.example.test/backend-api',
+	clientVersion: 'test-version',
+};
+
 describe('doctor', () => {
 	it('reports auth, models, provider, and skipped live smoke', async () => {
 		const { authPath } = await makeTempAuth(makeAuth());
@@ -9,7 +14,7 @@ describe('doctor', () => {
 			models: [{ slug: 'gpt-test', visibility: 'list', supported_in_api: true, is_default: true }],
 		});
 
-		const report = await doctorCodexProvider({ authPath, fetchImpl });
+		const report = await doctorCodexProvider({ authPath, fetchImpl, ...TEST_RUNTIME });
 
 		expect(report.ok).toBe(true);
 		expect(report.modelCount).toBe(1);
@@ -32,6 +37,7 @@ describe('doctor', () => {
 			registerProviderImpl,
 			liveSmokeImpl,
 			liveSmokeTimeoutMs: 100,
+			...TEST_RUNTIME,
 		});
 
 		expect(report.ok).toBe(true);
@@ -57,6 +63,7 @@ describe('doctor', () => {
 			liveSmoke: true,
 			registerProviderImpl: vi.fn(),
 			liveSmokeImpl: async () => ({ ok: false, model: 'openai-codex/gpt-test', message: 'nope' }),
+			...TEST_RUNTIME,
 		});
 
 		expect(report.ok).toBe(false);

@@ -14,7 +14,9 @@ Log in with Codex first:
 codex login
 ```
 
-`@sematico/flue-codex` reads `~/.codex/auth.json`, refreshes stale OAuth tokens, discovers the account's available Codex models, and registers them with Flue as `openai-codex/*`.
+`@sematico/flue-codex` reads `~/.codex/auth.json`, refreshes stale OAuth tokens using metadata from the current Codex login, discovers the account's available Codex models using the installed Codex runtime metadata, and registers them with Flue as `openai-codex/*`.
+
+The package does not ship an OpenAI OAuth client ID or Codex backend version. It infers the OAuth `client_id` from the logged-in access token, discovers the token endpoint from that token's issuer, reads the Codex client version from the local model cache or installed `codex --version`, and resolves the ChatGPT backend URL from Codex runtime configuration.
 
 ## Usage
 
@@ -45,6 +47,7 @@ pnpm exec flue-codex-doctor --live
 - `createCodexProvider(options?)` returns the provider definition without registering it.
 - `doctorCodexProvider(options?)` checks auth, model discovery, provider construction, and optional live completion.
 - `runCodexLiveSmoke(options)` runs the tiny live completion check.
+- `resolveCodexRuntimeConfig(options?)` shows the Codex backend URL and client version inferred from the local install.
 
 ## License
 

@@ -1,9 +1,13 @@
-import { CODEX_ACCOUNT_CLAIM } from './auth.constants.js';
 import { isRecord } from '../support/is-record.js';
 
 export interface JwtPayload {
 	exp?: unknown;
 	[key: string]: unknown;
+}
+
+export interface CodexAccountClaim {
+	claimKey: string;
+	accountId: string;
 }
 
 export function decodeJwtPayload(token: string): JwtPayload | null {
@@ -25,11 +29,35 @@ export function getJwtExpiration(token: string): Date | undefined {
 	return typeof exp === 'number' && Number.isFinite(exp) ? new Date(exp * 1000) : undefined;
 }
 
-export function getJwtCodexAccountId(token: string): string | undefined {
+export function getJwtStringClaim(token: string, claim: string): string | undefined {
 	const payload = decodeJwtPayload(token);
-	const auth = payload?.[CODEX_ACCOUNT_CLAIM];
-	if (isRecord(auth) && typeof auth.chatgpt_account_id === 'string' && auth.chatgpt_account_id.length > 0) {
-		return auth.chatgpt_account_id;
+	const value = payload?.[claim];
+	return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+export function getJwtCodexAccountClaim(
+	token: string,
+	expectedAccountId?: string | undefined,
+): CodexAccountClaim | undefined {
+	const payload = decodeJwtPayload(token);
+	if (!payload) return undefined;
+
+	const claims = Object.entries(payload)
+		.map(([claimKey, value]) => {
+			if (!isRecord(value)) return undefined;
+			const accountId = value.chatgpt_account_id;
+			if (typeof accountId !== 'string' || accountId.length === 0) return undefined;
+			return { claimKey, accountId };
+		})
+		.filter((claim): claim is CodexAccountClaim => claim !== undefined);
+
+	if (expectedAccountId) {
+		return claims.find((claim) => claim.accountId === expectedAccountId);
 	}
-	return undefined;
+
+	return claims.at(0);
+}
+
+export function getJwtCodexAccountId(token: string, expectedAccountId?: string | undefined): string | undefined {
+	return getJwtCodexAccountClaim(token, expectedAccountId)?.accountId;
 }

@@ -1,32 +1,35 @@
-import { CODEX_OAUTH_CLIENT_ID, CODEX_TOKEN_URL } from './auth.constants.js';
 import { FlueCodexError, errorToReportMessage } from '../support/flue-codex-error.js';
 import { isRecord } from '../support/is-record.js';
 import { codexHttpFailureMessage } from '../codex/http.js';
 import { getJwtCodexAccountId, getJwtExpiration } from './jwt.js';
-import type { CodexTokenRefreshResult } from './auth.types.js';
+import { resolveCodexOAuthMetadata } from './oauth-metadata.js';
+import type { CodexAuthJson, CodexTokenRefreshResult } from './auth.types.js';
 
 export interface RefreshCodexTokenOptions {
+	accessToken: string;
+	auth: CodexAuthJson;
 	fetchImpl?: typeof fetch | undefined;
 	tokenUrl?: string | undefined;
+	clientId?: string | undefined;
 	signal?: AbortSignal | undefined;
 }
 
 export async function refreshCodexToken(
 	refreshToken: string,
-	options: RefreshCodexTokenOptions = {},
+	options: RefreshCodexTokenOptions,
 ): Promise<CodexTokenRefreshResult> {
 	const fetcher = options.fetchImpl ?? fetch;
-	const tokenUrl = options.tokenUrl ?? CODEX_TOKEN_URL;
+	const oauth = await resolveCodexOAuthMetadata(options);
 
 	let response: Response;
 	try {
-		response = await fetcher(tokenUrl, {
+		response = await fetcher(oauth.tokenUrl, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 			body: new URLSearchParams({
 				grant_type: 'refresh_token',
 				refresh_token: refreshToken,
-				client_id: CODEX_OAUTH_CLIENT_ID,
+				client_id: oauth.clientId,
 			}),
 			...(options.signal ? { signal: options.signal } : {}),
 		});

@@ -8,6 +8,7 @@ export type FlueCodexErrorCode =
 	| 'unsupported_auth_shape'
 	| 'token_refresh_failed'
 	| 'auth_write_failed'
+	| 'runtime_metadata_unavailable'
 	| 'model_discovery_failed'
 	| 'model_access_denied'
 	| 'empty_model_list'

@@ -1,3 +1,5 @@
+import type { ExecFileImpl, ReadTextFileImpl } from './runtime-config.js';
+
 export interface RawCodexModel {
 	slug?: unknown;
 	id?: unknown;
@@ -24,8 +26,12 @@ export interface DiscoverCodexModelsOptions {
 	accountId: string;
 	baseUrl?: string | undefined;
 	clientVersion?: string | undefined;
+	codexHome?: string | undefined;
 	timeoutMs?: number | undefined;
 	fetchImpl?: typeof fetch | undefined;
 	signal?: AbortSignal | undefined;
 	env?: NodeJS.ProcessEnv | undefined;
+	execFileImpl?: ExecFileImpl | undefined;
+	readFileImpl?: ReadTextFileImpl | undefined;
+	runtimeCommandTimeoutMs?: number | undefined;
 }

@@ -1,19 +1,14 @@
-import {
-	DEFAULT_CODEX_BACKEND_BASE_URL,
-	DEFAULT_CODEX_MODEL_CLIENT_VERSION,
-	DEFAULT_CODEX_MODEL_TIMEOUT_MS,
-} from './codex.constants.js';
+import { DEFAULT_CODEX_MODEL_TIMEOUT_MS } from './codex.constants.js';
 import { composeAbortSignals, withAbortSignal } from '../support/abort.js';
 import { FlueCodexError } from '../support/flue-codex-error.js';
 import { isRecord } from '../support/is-record.js';
 import { codexHttpFailureMessage, codexModelsUrl, timeoutSignalBundle } from './http.js';
+import { resolveCodexRuntimeConfig } from './runtime-config.js';
 import type { CodexDiscoveredModel, DiscoverCodexModelsOptions, RawCodexModel } from './codex.types.js';
 import { normalizeCodexModel } from './model-normalization.js';
 
 export async function discoverCodexModels(options: DiscoverCodexModelsOptions): Promise<CodexDiscoveredModel[]> {
-	const baseUrl = options.baseUrl ?? DEFAULT_CODEX_BACKEND_BASE_URL;
-	const env = options.env ?? process.env;
-	const clientVersion = options.clientVersion ?? env.CODEX_CLIENT_VERSION ?? DEFAULT_CODEX_MODEL_CLIENT_VERSION;
+	const { baseUrl, clientVersion } = await resolveCodexRuntimeConfig(options);
 	const url = codexModelsUrl(baseUrl, clientVersion);
 	const fetcher = options.fetchImpl ?? fetch;
 

@@ -18,6 +18,12 @@ export type {
 } from './diagnostics/report.js';
 
 export { discoverCodexModels } from './codex/model-discovery.js';
+export {
+	resolveCodexBackendBaseUrl,
+	resolveCodexClientVersion,
+	resolveCodexRuntimeConfig,
+} from './codex/runtime-config.js';
+export type { CodexRuntimeConfig, CodexRuntimeConfigOptions } from './codex/runtime-config.js';
 export { normalizeCodexModel, selectDefaultCodexModel } from './codex/model-normalization.js';
 export { modelOverridesForFlue } from './codex/model-overrides.js';
 export type { CodexDiscoveredModel, DiscoverCodexModelsOptions, RawCodexModel } from './codex/codex.types.js';

@@ -48,8 +48,11 @@ export async function resolveCodexCredentials(
 	let refreshed: CodexTokenRefreshResult;
 	try {
 		refreshed = await refreshCodexToken(refreshToken, {
+			accessToken,
+			auth,
 			fetchImpl: options.fetchImpl,
 			tokenUrl: options.tokenUrl,
+			clientId: options.clientId,
 			signal: refreshSignal.signal,
 		});
 	} catch (error) {
