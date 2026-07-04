@@ -9,6 +9,9 @@ export interface RunCodexLiveSmokeOptions {
 	prompt?: string | undefined;
 	cwd?: string | undefined;
 	timeoutMs?: number | undefined;
+}
+
+export interface RunCodexLiveSmokeDependencies {
 	runtimeLoader?: (() => Promise<FlueSmokeRuntime>) | undefined;
 }
 
@@ -32,6 +35,13 @@ interface FlueSmokeSession {
 }
 
 export async function runCodexLiveSmoke(options: RunCodexLiveSmokeOptions): Promise<CodexLiveSmokeReport> {
+	return runCodexLiveSmokeWithDependencies(options);
+}
+
+export async function runCodexLiveSmokeWithDependencies(
+	options: RunCodexLiveSmokeOptions,
+	dependencies: RunCodexLiveSmokeDependencies = {},
+): Promise<CodexLiveSmokeReport> {
 	const prompt = options.prompt ?? 'Reply with exactly this JSON and no markdown: {"ok":true}';
 
 	try {
@@ -43,7 +53,7 @@ export async function runCodexLiveSmoke(options: RunCodexLiveSmokeOptions): Prom
 		let response: { text?: unknown };
 		try {
 			const { createFlueContext, InMemorySessionStore, resolveModel, local } = await withAbortSignal(
-				(options.runtimeLoader ?? loadFlueSmokeRuntime)(),
+				(dependencies.runtimeLoader ?? loadFlueSmokeRuntime)(),
 				timeout.signal,
 			);
 

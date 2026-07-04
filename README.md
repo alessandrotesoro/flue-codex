@@ -24,12 +24,22 @@ The package does not ship an OpenAI OAuth client ID or Codex backend version. It
 import { defineAgent } from '@flue/runtime';
 import { registerCodexProvider } from '@sematico/flue-codex';
 
-await registerCodexProvider();
+const provider = await registerCodexProvider();
 
 export default defineAgent(() => ({
-  model: 'openai-codex/gpt-5.5',
+  model: provider.defaultModelId,
   instructions: 'Help with the task.',
 }));
+```
+
+Provider options are grouped by concern:
+
+```ts
+await registerCodexProvider({
+  auth: { path: '/path/to/auth.json' },
+  runtime: { baseUrl: 'https://chatgpt.com/backend-api', clientVersion: '0.203.4' },
+  timeouts: { fetchMs: 30_000 },
+});
 ```
 
 ## Diagnostics
@@ -43,11 +53,12 @@ pnpm exec flue-codex-doctor --live
 
 ## API
 
-- `registerCodexProvider(options?)` creates and registers the Flue provider.
-- `createCodexProvider(options?)` returns the provider definition without registering it.
-- `doctorCodexProvider(options?)` checks auth, model discovery, provider construction, and optional live completion.
-- `runCodexLiveSmoke(options)` runs the tiny live completion check.
-- `resolveCodexRuntimeConfig(options?)` shows the Codex backend URL and client version inferred from the local install.
+- `@sematico/flue-codex` exports `registerCodexProvider(options?)`, safe provider result/types, and `FlueCodexError`.
+- `@sematico/flue-codex/provider` exports `createCodexProviderDefinition(options?)` for advanced provider composition. The returned registration contains the Codex access token.
+- `@sematico/flue-codex/diagnostics` exports `doctorCodexProvider(options?)` and `runCodexLiveSmoke(options)`.
+- `@sematico/flue-codex/auth` exports credential and auth-file resolvers.
+- `@sematico/flue-codex/runtime` exports Codex runtime metadata resolvers.
+- `@sematico/flue-codex/models` exports Codex model discovery.
 
 ## License
 

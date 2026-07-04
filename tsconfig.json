@@ -11,7 +11,12 @@
 		"rootDir": ".",
 		"baseUrl": ".",
 		"paths": {
-			"@sematico/flue-codex": ["./src/index.ts"]
+			"@sematico/flue-codex": ["./src/index.ts"],
+			"@sematico/flue-codex/provider": ["./src/provider/index.ts"],
+			"@sematico/flue-codex/diagnostics": ["./src/diagnostics/index.ts"],
+			"@sematico/flue-codex/auth": ["./src/auth/index.ts"],
+			"@sematico/flue-codex/runtime": ["./src/runtime/index.ts"],
+			"@sematico/flue-codex/models": ["./src/models/index.ts"]
 		},
 		"types": ["node"],
 		"skipLibCheck": true,

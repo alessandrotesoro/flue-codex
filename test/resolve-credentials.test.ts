@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { describe, expect, it, vi } from 'vitest';
-import { resolveCodexCredentials } from '../src/auth/resolve-credentials.js';
+import { resolveCodexCredentials, resolveCodexCredentialsWithDependencies } from '../src/auth/resolve-credentials.js';
 import { makeAccessToken, makeAuth, makeJwt, makeTempAuth, mockFetch, mockJsonFetch } from './helpers.js';
 
 describe('resolveCodexCredentials', () => {
@@ -19,11 +19,13 @@ describe('resolveCodexCredentials', () => {
 		);
 		const fetchImpl = mockJsonFetch({ access_token: refreshedAccess, refresh_token: 'new-refresh' });
 
-		const credentials = await resolveCodexCredentials({
-			authPath,
-			fetchImpl,
-			tokenUrl: 'https://auth.example.test/oauth/token',
-		});
+		const credentials = await resolveCodexCredentialsWithDependencies(
+			{
+				authPath,
+				tokenUrl: 'https://auth.example.test/oauth/token',
+			},
+			{ fetchImpl },
+		);
 
 		expect(credentials.refreshed).toBe(true);
 		expect(credentials.accessToken).toBe(refreshedAccess);
@@ -64,7 +66,10 @@ describe('resolveCodexCredentials', () => {
 		const fetchImpl = mockJsonFetch({ access_token: makeAccessToken('acct-other'), refresh_token: 'new-refresh' });
 
 		await expect(
-			resolveCodexCredentials({ authPath, fetchImpl, tokenUrl: 'https://auth.example.test/oauth/token' }),
+			resolveCodexCredentialsWithDependencies(
+				{ authPath, tokenUrl: 'https://auth.example.test/oauth/token' },
+				{ fetchImpl },
+			),
 		).rejects.toMatchObject({
 			code: 'account_id_mismatch',
 		});
@@ -100,11 +105,13 @@ describe('resolveCodexCredentials', () => {
 			return new Response('invalid_grant', { status: 400, statusText: 'Bad Request' });
 		});
 
-		const credentials = await resolveCodexCredentials({
-			authPath,
-			fetchImpl,
-			tokenUrl: 'https://auth.example.test/oauth/token',
-		});
+		const credentials = await resolveCodexCredentialsWithDependencies(
+			{
+				authPath,
+				tokenUrl: 'https://auth.example.test/oauth/token',
+			},
+			{ fetchImpl },
+		);
 
 		expect(credentials).toMatchObject({
 			accessToken: concurrentAccess,
@@ -148,11 +155,13 @@ describe('resolveCodexCredentials', () => {
 			});
 		});
 
-		const credentials = await resolveCodexCredentials({
-			authPath,
-			fetchImpl,
-			tokenUrl: 'https://auth.example.test/oauth/token',
-		});
+		const credentials = await resolveCodexCredentialsWithDependencies(
+			{
+				authPath,
+				tokenUrl: 'https://auth.example.test/oauth/token',
+			},
+			{ fetchImpl },
+		);
 
 		expect(credentials).toMatchObject({
 			accessToken: concurrentAccess,
@@ -184,26 +193,28 @@ describe('resolveCodexCredentials', () => {
 			throw new Error('metadata failure should happen before fetch');
 		});
 
-		const credentials = await resolveCodexCredentials({
-			authPath,
-			get fetchImpl() {
-				writeFileSync(
-					authPath,
-					`${JSON.stringify(
-						makeAuth({
-							tokens: {
-								access_token: concurrentAccess,
-								refresh_token: 'concurrent-refresh',
-								account_id: 'acct-test',
-							},
-						}),
-						null,
-						2,
-					)}\n`,
-				);
-				return fetchImpl;
+		const credentials = await resolveCodexCredentialsWithDependencies(
+			{ authPath },
+			{
+				get fetchImpl() {
+					writeFileSync(
+						authPath,
+						`${JSON.stringify(
+							makeAuth({
+								tokens: {
+									access_token: concurrentAccess,
+									refresh_token: 'concurrent-refresh',
+									account_id: 'acct-test',
+								},
+							}),
+							null,
+							2,
+						)}\n`,
+					);
+					return fetchImpl;
+				},
 			},
-		});
+		);
 
 		expect(credentials).toMatchObject({
 			accessToken: concurrentAccess,

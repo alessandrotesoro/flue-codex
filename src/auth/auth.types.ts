@@ -35,11 +35,14 @@ export interface ResolveCodexCredentialsOptions extends CodexAuthPathOptions {
 	proactiveRefreshMs?: number | undefined;
 	timeoutMs?: number | undefined;
 	now?: Date | undefined;
-	fetchImpl?: typeof fetch | undefined;
 	tokenUrl?: string | undefined;
 	clientId?: string | undefined;
 	signal?: AbortSignal | undefined;
 	refreshTimeoutMs?: number | undefined;
+}
+
+export interface ResolveCodexCredentialsDependencies {
+	fetchImpl?: typeof fetch | undefined;
 }
 
 export interface CodexTokenRefreshResult {

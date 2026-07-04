@@ -26,8 +26,11 @@ export interface DiscoverCodexModelsOptions {
 	clientVersion?: string | undefined;
 	codexHome?: string | undefined;
 	timeoutMs?: number | undefined;
-	fetchImpl?: typeof fetch | undefined;
 	signal?: AbortSignal | undefined;
 	env?: NodeJS.ProcessEnv | undefined;
 	runtimeCommandTimeoutMs?: number | undefined;
+}
+
+export interface DiscoverCodexModelsDependencies {
+	fetchImpl?: typeof fetch | undefined;
 }

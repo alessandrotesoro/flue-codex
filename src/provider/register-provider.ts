@@ -1,13 +1,24 @@
 import { registerProvider } from '@flue/runtime';
 import { FlueCodexError } from '../support/flue-codex-error.js';
-import { createCodexProvider } from './create-provider.js';
-import type { CodexProviderRegistrationResult, RegisterCodexProviderOptions } from './provider.types.js';
+import { createCodexProviderDefinitionWithDependencies } from './create-provider.js';
+import type {
+	CodexProviderRegistrationDependencies,
+	CodexProviderRegistrationResult,
+	RegisterCodexProviderOptions,
+} from './provider.types.js';
 
 export async function registerCodexProvider(
 	options: RegisterCodexProviderOptions = {},
 ): Promise<CodexProviderRegistrationResult> {
-	const definition = await createCodexProvider(options);
-	const register = options.registerProviderImpl ?? registerProvider;
+	return registerCodexProviderWithDependencies(options);
+}
+
+export async function registerCodexProviderWithDependencies(
+	options: RegisterCodexProviderOptions = {},
+	dependencies: CodexProviderRegistrationDependencies = {},
+): Promise<CodexProviderRegistrationResult> {
+	const definition = await createCodexProviderDefinitionWithDependencies(options, dependencies);
+	const register = dependencies.registerProviderImpl ?? registerProvider;
 
 	try {
 		register(definition.providerId, definition.registration);

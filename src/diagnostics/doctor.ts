@@ -1,32 +1,51 @@
 import { registerProvider } from '@flue/runtime';
-import { selectDefaultCodexModel } from '../codex/model-normalization.js';
-import { OPENAI_CODEX_PROVIDER_ID } from '../provider/provider.constants.js';
 import { errorToReportMessage, isFlueCodexError } from '../support/flue-codex-error.js';
 import { buildCodexProviderDefinition, resolveCodexProviderInputs } from '../provider/create-provider.js';
-import { runCodexLiveSmoke } from './smoke.js';
+import { runCodexLiveSmokeWithDependencies } from './smoke.js';
 import type { CodexDoctorReport, CodexDoctorStep, CodexLiveSmokeReport } from './report.js';
-import type { CreateCodexProviderOptions } from '../provider/provider.types.js';
+import type { CodexProviderOptions, CodexProviderRegistrationDependencies } from '../provider/provider.types.js';
+import type { RunCodexLiveSmokeDependencies, RunCodexLiveSmokeOptions } from './smoke.js';
 
-export interface DoctorCodexProviderOptions extends CreateCodexProviderOptions {
-	liveSmoke?: boolean | undefined;
-	liveSmokeModel?: string | undefined;
-	liveSmokePrompt?: string | undefined;
-	liveSmokeTimeoutMs?: number | undefined;
+export interface DoctorCodexProviderOptions extends CodexProviderOptions {
+	diagnostics?: CodexDoctorDiagnosticsOptions | undefined;
+}
+
+export interface CodexDoctorDiagnosticsOptions {
+	liveSmoke?: CodexDoctorLiveSmokeOptions | undefined;
+}
+
+export interface CodexDoctorLiveSmokeOptions {
+	enabled?: boolean | undefined;
+	modelId?: string | undefined;
+	prompt?: string | undefined;
+	timeoutMs?: number | undefined;
 	cwd?: string | undefined;
-	registerProviderImpl?: typeof registerProvider | undefined;
-	liveSmokeImpl?: ((options: Parameters<typeof runCodexLiveSmoke>[0]) => Promise<CodexLiveSmokeReport>) | undefined;
+}
+
+export interface DoctorCodexProviderDependencies
+	extends CodexProviderRegistrationDependencies,
+		RunCodexLiveSmokeDependencies {
+	liveSmokeImpl?: ((options: RunCodexLiveSmokeOptions) => Promise<CodexLiveSmokeReport>) | undefined;
 }
 
 export async function doctorCodexProvider(options: DoctorCodexProviderOptions = {}): Promise<CodexDoctorReport> {
+	return doctorCodexProviderWithDependencies(options);
+}
+
+export async function doctorCodexProviderWithDependencies(
+	options: DoctorCodexProviderOptions = {},
+	dependencies: DoctorCodexProviderDependencies = {},
+): Promise<CodexDoctorReport> {
 	const steps: CodexDoctorStep[] = [];
 	let authPath: string | undefined;
 	let refreshed = false;
 	let accountIdPresent = false;
 	let modelCount = 0;
-	let defaultModel: string | undefined;
+	let defaultModelId: string | undefined;
+	let defaultCodexModelId: string | undefined;
 
 	try {
-		const { credentials, models, baseUrl } = await resolveCodexProviderInputs(options);
+		const { credentials, models, baseUrl } = await resolveCodexProviderInputs(options, dependencies);
 		authPath = credentials.authPath;
 		refreshed = credentials.refreshed;
 		accountIdPresent = credentials.accountId.length > 0;
@@ -37,27 +56,32 @@ export async function doctorCodexProvider(options: DoctorCodexProviderOptions = 
 		});
 
 		modelCount = models.length;
-		defaultModel = selectDefaultCodexModel(models);
 		steps.push({ name: 'models', status: 'pass', message: `Discovered ${models.length} usable Codex model(s).` });
 
 		const definition = buildCodexProviderDefinition({ credentials, models, baseUrl });
+		defaultModelId = definition.defaultModelId;
+		defaultCodexModelId = definition.defaultCodexModelId;
 		steps.push({
 			name: 'provider',
 			status: 'pass',
-			message: `${OPENAI_CODEX_PROVIDER_ID} provider definition can be created.`,
+			message: `${definition.providerId} provider definition can be created.`,
 		});
 
 		let liveSmoke: CodexLiveSmokeReport | undefined;
-		if (options.liveSmoke) {
-			const register = options.registerProviderImpl ?? registerProvider;
+		const liveSmokeOptions = options.diagnostics?.liveSmoke;
+		if (liveSmokeOptions?.enabled) {
+			const register = dependencies.registerProviderImpl ?? registerProvider;
 			register(definition.providerId, definition.registration);
-			const smokeModel = `${OPENAI_CODEX_PROVIDER_ID}/${options.liveSmokeModel ?? defaultModel}`;
-			liveSmoke = await (options.liveSmokeImpl ?? runCodexLiveSmoke)({
-				model: smokeModel,
-				prompt: options.liveSmokePrompt,
-				timeoutMs: options.liveSmokeTimeoutMs,
-				cwd: options.cwd,
-			});
+
+			const smokeInput = {
+				model: liveSmokeOptions.modelId ?? definition.defaultModelId,
+				prompt: liveSmokeOptions.prompt,
+				timeoutMs: liveSmokeOptions.timeoutMs,
+				cwd: liveSmokeOptions.cwd,
+			};
+			liveSmoke = dependencies.liveSmokeImpl
+				? await dependencies.liveSmokeImpl(smokeInput)
+				: await runCodexLiveSmokeWithDependencies(smokeInput, dependencies);
 			steps.push({
 				name: 'live-smoke',
 				status: liveSmoke.ok ? 'pass' : 'fail',
@@ -73,7 +97,8 @@ export async function doctorCodexProvider(options: DoctorCodexProviderOptions = 
 			accountIdPresent,
 			refreshed,
 			modelCount,
-			defaultModel,
+			defaultModelId,
+			defaultCodexModelId,
 			liveSmoke,
 			steps,
 		};
@@ -90,7 +115,8 @@ export async function doctorCodexProvider(options: DoctorCodexProviderOptions = 
 			accountIdPresent,
 			refreshed,
 			modelCount,
-			defaultModel,
+			defaultModelId,
+			defaultCodexModelId,
 			steps,
 		};
 	}

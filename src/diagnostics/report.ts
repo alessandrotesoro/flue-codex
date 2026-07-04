@@ -15,7 +15,8 @@ export interface CodexDoctorReport {
 	accountIdPresent: boolean;
 	refreshed: boolean;
 	modelCount: number;
-	defaultModel?: string | undefined;
+	defaultModelId?: string | undefined;
+	defaultCodexModelId?: string | undefined;
 	liveSmoke?: CodexLiveSmokeReport | undefined;
 	steps: CodexDoctorStep[];
 }

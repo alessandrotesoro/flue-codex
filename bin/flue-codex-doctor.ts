@@ -3,7 +3,11 @@ import { doctorCodexProvider } from '../src/diagnostics/doctor.js';
 
 async function main(): Promise<void> {
 	const liveSmoke = process.argv.includes('--live') || process.env.FLUE_CODEX_LIVE_SMOKE === '1';
-	const report = await doctorCodexProvider({ liveSmoke });
+	const report = await doctorCodexProvider({
+		diagnostics: {
+			liveSmoke: { enabled: liveSmoke },
+		},
+	});
 
 	await writeOutput(process.stdout, `${JSON.stringify(report, null, 2)}\n`);
 	process.exit(report.ok ? 0 : 1);

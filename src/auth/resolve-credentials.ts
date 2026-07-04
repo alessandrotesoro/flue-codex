@@ -9,11 +9,19 @@ import { refreshCodexToken } from './token-refresh.js';
 import type {
 	CodexOAuthCredentials,
 	CodexTokenRefreshResult,
+	ResolveCodexCredentialsDependencies,
 	ResolveCodexCredentialsOptions,
 } from './auth.types.js';
 
 export async function resolveCodexCredentials(
 	options: ResolveCodexCredentialsOptions = {},
+): Promise<CodexOAuthCredentials> {
+	return resolveCodexCredentialsWithDependencies(options);
+}
+
+export async function resolveCodexCredentialsWithDependencies(
+	options: ResolveCodexCredentialsOptions = {},
+	dependencies: ResolveCodexCredentialsDependencies = {},
 ): Promise<CodexOAuthCredentials> {
 	const { authPath, auth } = await readCodexAuthFile(options);
 	const accessToken = getAccessToken(auth);
@@ -49,7 +57,7 @@ export async function resolveCodexCredentials(
 		refreshed = await refreshCodexToken(refreshToken, {
 			accessToken,
 			auth,
-			fetchImpl: options.fetchImpl,
+			fetchImpl: dependencies.fetchImpl,
 			tokenUrl: options.tokenUrl,
 			clientId: options.clientId,
 			signal: refreshSignal.signal,

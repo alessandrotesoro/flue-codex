@@ -19,10 +19,12 @@ export interface CodexRuntimeConfigOptions {
 	runtimeCommandTimeoutMs?: number | undefined;
 }
 
-interface CodexRuntimeResolverOptions extends CodexRuntimeConfigOptions {
+export interface CodexRuntimeConfigDependencies {
 	execFileImpl?: ExecFileImpl | undefined;
 	readFileImpl?: ReadTextFileImpl | undefined;
 }
+
+interface CodexRuntimeResolverOptions extends CodexRuntimeConfigOptions, CodexRuntimeConfigDependencies {}
 
 export type ExecFileImpl = (
 	file: string,
@@ -35,29 +37,40 @@ export type ReadTextFileImpl = (path: string, encoding: BufferEncoding) => Promi
 const DEFAULT_RUNTIME_COMMAND_TIMEOUT_MS = 15_000;
 const DEFAULT_DOCTOR_COMMAND_TIMEOUT_MS = 60_000;
 
-export function resolveCodexRuntimeConfig(options?: CodexRuntimeConfigOptions): Promise<CodexRuntimeConfig>;
-export async function resolveCodexRuntimeConfig(
-	options: CodexRuntimeResolverOptions = {},
+export async function resolveCodexRuntimeConfig(options: CodexRuntimeConfigOptions = {}): Promise<CodexRuntimeConfig> {
+	return resolveCodexRuntimeConfigWithDependencies(options);
+}
+
+export async function resolveCodexRuntimeConfigWithDependencies(
+	options: CodexRuntimeConfigOptions = {},
+	dependencies: CodexRuntimeConfigDependencies = {},
 ): Promise<CodexRuntimeConfig> {
 	const [baseUrl, clientVersion] = await Promise.all([
-		resolveCodexBackendBaseUrl(options),
-		resolveCodexClientVersion(options),
+		resolveCodexBackendBaseUrlWithDependencies(options, dependencies),
+		resolveCodexClientVersionWithDependencies(options, dependencies),
 	]);
 
 	return { baseUrl, clientVersion };
 }
 
-export function resolveCodexClientVersion(options?: CodexRuntimeConfigOptions): Promise<string>;
-export async function resolveCodexClientVersion(options: CodexRuntimeResolverOptions = {}): Promise<string> {
-	const env = options.env ?? process.env;
-	const explicit = nonEmptyString(options.clientVersion) ?? nonEmptyString(env.CODEX_CLIENT_VERSION);
+export async function resolveCodexClientVersion(options: CodexRuntimeConfigOptions = {}): Promise<string> {
+	return resolveCodexClientVersionWithDependencies(options);
+}
+
+export async function resolveCodexClientVersionWithDependencies(
+	options: CodexRuntimeConfigOptions = {},
+	dependencies: CodexRuntimeConfigDependencies = {},
+): Promise<string> {
+	const resolverOptions = toRuntimeResolverOptions(options, dependencies);
+	const env = resolverOptions.env ?? process.env;
+	const explicit = nonEmptyString(resolverOptions.clientVersion) ?? nonEmptyString(env.CODEX_CLIENT_VERSION);
 	if (explicit) return explicit;
 
-	const codexHome = resolveCodexHome(options);
-	const cached = await readCachedClientVersion(codexHome, options);
+	const codexHome = resolveCodexHome(resolverOptions);
+	const cached = await readCachedClientVersion(codexHome, resolverOptions);
 	if (cached) return cached;
 
-	const output = await runCodexCommand(['--version'], options).catch(() => undefined);
+	const output = await runCodexCommand(['--version'], resolverOptions).catch(() => undefined);
 	const version = output ? parseCodexVersion(output.stdout || output.stderr) : undefined;
 	if (version) return version;
 
@@ -67,15 +80,22 @@ export async function resolveCodexClientVersion(options: CodexRuntimeResolverOpt
 	);
 }
 
-export function resolveCodexBackendBaseUrl(options?: CodexRuntimeConfigOptions): Promise<string>;
-export async function resolveCodexBackendBaseUrl(options: CodexRuntimeResolverOptions = {}): Promise<string> {
-	const env = options.env ?? process.env;
-	const explicit = nonEmptyString(options.baseUrl) ?? nonEmptyString(env.CODEX_API_BASE_URL);
+export async function resolveCodexBackendBaseUrl(options: CodexRuntimeConfigOptions = {}): Promise<string> {
+	return resolveCodexBackendBaseUrlWithDependencies(options);
+}
+
+export async function resolveCodexBackendBaseUrlWithDependencies(
+	options: CodexRuntimeConfigOptions = {},
+	dependencies: CodexRuntimeConfigDependencies = {},
+): Promise<string> {
+	const resolverOptions = toRuntimeResolverOptions(options, dependencies);
+	const env = resolverOptions.env ?? process.env;
+	const explicit = nonEmptyString(resolverOptions.baseUrl) ?? nonEmptyString(env.CODEX_API_BASE_URL);
 	if (explicit) return normalizeCodexBackendBaseUrl(explicit);
 
 	const doctor = await runCodexCommand(
 		['doctor', '--json', '--summary', '--no-color', '--ascii'],
-		options,
+		resolverOptions,
 		DEFAULT_DOCTOR_COMMAND_TIMEOUT_MS,
 	).catch(() => undefined);
 	const baseUrl = doctor ? safeParseDoctorBackendBaseUrl(doctor.stdout) : undefined;
@@ -90,6 +110,13 @@ export async function resolveCodexBackendBaseUrl(options: CodexRuntimeResolverOp
 export function resolveCodexHome(options: Pick<CodexRuntimeConfigOptions, 'codexHome' | 'env'> = {}): string {
 	const env = options.env ?? process.env;
 	return options.codexHome ?? env.CODEX_HOME ?? join(homedir(), '.codex');
+}
+
+function toRuntimeResolverOptions(
+	options: CodexRuntimeConfigOptions,
+	dependencies: CodexRuntimeConfigDependencies,
+): CodexRuntimeResolverOptions {
+	return { ...options, ...dependencies };
 }
 
 function readCachedClientVersion(

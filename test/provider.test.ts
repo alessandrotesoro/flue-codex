@@ -1,7 +1,9 @@
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { createCodexProvider, registerCodexProvider, type CreateCodexProviderOptions } from '../src/index.js';
+import { createCodexProviderDefinitionWithDependencies } from '../src/provider/create-provider.js';
+import { registerCodexProviderWithDependencies } from '../src/provider/register-provider.js';
+import type { CreateCodexProviderDefinitionOptions } from '../src/provider/provider.types.js';
 import type { ExecFileImpl } from '../src/codex/runtime-config.js';
 import { makeAuth, makeTempAuth, mockJsonFetch } from './helpers.js';
 
@@ -17,14 +19,19 @@ describe('Flue provider construction', () => {
 			models: [{ slug: 'gpt-test', visibility: 'list', supported_in_api: true, context_window: 2048 }],
 		});
 
-		const definition = await createCodexProvider({
-			authPath,
-			fetchImpl,
-			...TEST_RUNTIME,
-		});
+		const definition = await createCodexProviderDefinitionWithDependencies(
+			{
+				auth: { path: authPath },
+				runtime: TEST_RUNTIME,
+			},
+			{ fetchImpl },
+		);
 
 		expect(definition.providerId).toBe('openai-codex');
-		expect(definition.defaultModel).toBe('gpt-test');
+		expect(definition.defaultModelId).toBe('openai-codex/gpt-test');
+		expect(definition.defaultCodexModelId).toBe('gpt-test');
+		expect(definition.modelIds).toEqual(['openai-codex/gpt-test']);
+		expect(definition.codexModelIds).toEqual(['gpt-test']);
 		expect(definition.registration).toMatchObject({
 			api: 'openai-codex-responses',
 			baseUrl: TEST_RUNTIME.baseUrl,
@@ -38,15 +45,18 @@ describe('Flue provider construction', () => {
 		const fetchImpl = mockJsonFetch({ models: [{ slug: 'gpt-test', visibility: 'list', supported_in_api: true }] });
 		const registerProviderImpl = vi.fn();
 
-		const result = await registerCodexProvider({
-			authPath,
-			fetchImpl,
-			registerProviderImpl,
-			...TEST_RUNTIME,
-		});
+		const result = await registerCodexProviderWithDependencies(
+			{
+				auth: { path: authPath },
+				runtime: TEST_RUNTIME,
+			},
+			{ fetchImpl, registerProviderImpl },
+		);
 
 		expect(result.providerId).toBe('openai-codex');
-		expect(result.modelIds).toEqual(['gpt-test']);
+		expect(result.defaultModelId).toBe('openai-codex/gpt-test');
+		expect(result.modelIds).toEqual(['openai-codex/gpt-test']);
+		expect(result).not.toHaveProperty('registration');
 		expect(registerProviderImpl).toHaveBeenCalledWith(
 			'openai-codex',
 			expect.objectContaining({ apiKey: expect.any(String), api: 'openai-codex-responses' }),
@@ -67,13 +77,11 @@ describe('Flue provider construction', () => {
 			};
 		});
 
-		const definition = await createCodexProvider(
+		const definition = await createCodexProviderDefinitionWithDependencies(
 			providerRuntimeTestOptions({
-				authPath,
-				codexHome,
-				fetchImpl,
-				execFileImpl,
+				auth: { path: authPath, codexHome },
 			}),
+			{ fetchImpl, execFileImpl },
 		);
 
 		expect(definition.registration).toMatchObject({
@@ -93,24 +101,26 @@ describe('Flue provider construction', () => {
 		const fetchImpl = mockJsonFetch({ models: [{ slug: 'gpt-test', visibility: 'list', supported_in_api: true }] });
 
 		await expect(
-			registerCodexProvider({
-				authPath,
-				fetchImpl,
-				registerProviderImpl: () => {
-					throw new Error('registry refused');
+			registerCodexProviderWithDependencies(
+				{
+					auth: { path: authPath },
+					runtime: TEST_RUNTIME,
 				},
-				...TEST_RUNTIME,
-			}),
+				{
+					fetchImpl,
+					registerProviderImpl: () => {
+						throw new Error('registry refused');
+					},
+				},
+			),
 		).rejects.toMatchObject({ code: 'provider_registration_failed' });
 	});
 });
 
-type ProviderRuntimeTestOptions = CreateCodexProviderOptions & {
-	execFileImpl?: ExecFileImpl | undefined;
-};
+type ProviderRuntimeTestOptions = CreateCodexProviderDefinitionOptions;
 
-function providerRuntimeTestOptions(options: ProviderRuntimeTestOptions): CreateCodexProviderOptions {
-	return options as CreateCodexProviderOptions;
+function providerRuntimeTestOptions(options: ProviderRuntimeTestOptions): CreateCodexProviderDefinitionOptions {
+	return options;
 }
 
 function doctorJsonOutput(baseUrl = TEST_RUNTIME.baseUrl): string {

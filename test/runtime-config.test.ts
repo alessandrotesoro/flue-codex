@@ -5,9 +5,10 @@ import { randomUUID } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import {
 	resolveCodexBackendBaseUrl,
+	resolveCodexBackendBaseUrlWithDependencies,
 	resolveCodexClientVersion,
+	resolveCodexClientVersionWithDependencies,
 	resolveCodexRuntimeConfig,
-	type CodexRuntimeConfigOptions,
 	type ExecFileImpl,
 } from '../src/codex/runtime-config.js';
 
@@ -26,7 +27,7 @@ describe('Codex runtime config', () => {
 		const execFileImpl: ExecFileImpl = vi.fn(async () => ({ stdout: 'codex-cli 0.201.2\n', stderr: '' }));
 
 		await expect(
-			resolveCodexClientVersion(runtimeTestOptions({ codexHome: await makeCodexHome(), execFileImpl })),
+			resolveCodexClientVersionWithDependencies({ codexHome: await makeCodexHome() }, { execFileImpl }),
 		).resolves.toBe('0.201.2');
 		expect(execFileImpl).toHaveBeenCalledWith('codex', ['--version'], expect.any(Object));
 	});
@@ -45,7 +46,7 @@ describe('Codex runtime config', () => {
 			stderr: '',
 		}));
 
-		await expect(resolveCodexBackendBaseUrl(runtimeTestOptions({ execFileImpl }))).resolves.toBe(
+		await expect(resolveCodexBackendBaseUrlWithDependencies({}, { execFileImpl })).resolves.toBe(
 			TEST_BACKEND_BASE_URL,
 		);
 		expect(execFileImpl).toHaveBeenCalledWith(
@@ -64,7 +65,7 @@ describe('Codex runtime config', () => {
 			throw error;
 		});
 
-		await expect(resolveCodexBackendBaseUrl(runtimeTestOptions({ execFileImpl }))).resolves.toBe(
+		await expect(resolveCodexBackendBaseUrlWithDependencies({}, { execFileImpl })).resolves.toBe(
 			TEST_BACKEND_BASE_URL,
 		);
 	});
@@ -80,11 +81,11 @@ describe('Codex runtime config', () => {
 		});
 
 		await expect(
-			resolveCodexBackendBaseUrl(
-				runtimeTestOptions({
+			resolveCodexBackendBaseUrlWithDependencies(
+				{
 					env: { FLUE_CODEX_TEST_MARKER: '1' } as NodeJS.ProcessEnv,
-					execFileImpl,
-				}),
+				},
+				{ execFileImpl },
 			),
 		).resolves.toBe(TEST_BACKEND_BASE_URL);
 	});
@@ -99,7 +100,7 @@ describe('Codex runtime config', () => {
 			};
 		});
 
-		await expect(resolveCodexBackendBaseUrl(runtimeTestOptions({ codexHome, execFileImpl }))).resolves.toBe(
+		await expect(resolveCodexBackendBaseUrlWithDependencies({ codexHome }, { execFileImpl })).resolves.toBe(
 			TEST_BACKEND_BASE_URL,
 		);
 	});
@@ -113,7 +114,7 @@ describe('Codex runtime config', () => {
 			};
 		});
 
-		await expect(resolveCodexBackendBaseUrl(runtimeTestOptions({ execFileImpl }))).resolves.toBe(
+		await expect(resolveCodexBackendBaseUrlWithDependencies({}, { execFileImpl })).resolves.toBe(
 			TEST_BACKEND_BASE_URL,
 		);
 	});
@@ -128,7 +129,7 @@ describe('Codex runtime config', () => {
 		});
 
 		await expect(
-			resolveCodexBackendBaseUrl(runtimeTestOptions({ execFileImpl, runtimeCommandTimeoutMs: 1_234 })),
+			resolveCodexBackendBaseUrlWithDependencies({ runtimeCommandTimeoutMs: 1_234 }, { execFileImpl }),
 		).resolves.toBe(TEST_BACKEND_BASE_URL);
 	});
 
@@ -136,7 +137,7 @@ describe('Codex runtime config', () => {
 		const execFileImpl: ExecFileImpl = vi.fn(async () => ({ stdout: 'codex-cli dev\n', stderr: '' }));
 
 		await expect(
-			resolveCodexClientVersion(runtimeTestOptions({ codexHome: await makeCodexHome(), execFileImpl })),
+			resolveCodexClientVersionWithDependencies({ codexHome: await makeCodexHome() }, { execFileImpl }),
 		).rejects.toMatchObject({
 			code: 'runtime_metadata_unavailable',
 		});
@@ -145,7 +146,7 @@ describe('Codex runtime config', () => {
 	it('fails clearly when the Codex backend URL cannot be inferred', async () => {
 		const execFileImpl: ExecFileImpl = vi.fn(async () => ({ stdout: '{}\n', stderr: '' }));
 
-		await expect(resolveCodexBackendBaseUrl(runtimeTestOptions({ execFileImpl }))).rejects.toMatchObject({
+		await expect(resolveCodexBackendBaseUrlWithDependencies({}, { execFileImpl })).rejects.toMatchObject({
 			code: 'runtime_metadata_unavailable',
 		});
 	});
@@ -166,14 +167,6 @@ describe('Codex runtime config', () => {
 		});
 	});
 });
-
-type RuntimeTestOptions = CodexRuntimeConfigOptions & {
-	execFileImpl?: ExecFileImpl | undefined;
-};
-
-function runtimeTestOptions(options: RuntimeTestOptions): CodexRuntimeConfigOptions {
-	return options as CodexRuntimeConfigOptions;
-}
 
 function doctorJsonOutput(baseUrl = TEST_BACKEND_BASE_URL): string {
 	return JSON.stringify({

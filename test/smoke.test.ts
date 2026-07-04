@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { runCodexLiveSmoke } from '../src/index.js';
+import { runCodexLiveSmokeWithDependencies } from '../src/diagnostics/smoke.js';
 import type { FlueSmokeRuntime } from '../src/diagnostics/smoke.js';
 
 describe('runCodexLiveSmoke', () => {
@@ -7,10 +7,7 @@ describe('runCodexLiveSmoke', () => {
 		const prompt = vi.fn(async () => ({ text: '{"ok":true}' }));
 		const runtimeLoader = async () => fakeRuntime({ prompt });
 
-		const report = await runCodexLiveSmoke({
-			model: 'openai-codex/gpt-test',
-			runtimeLoader,
-		});
+		const report = await runCodexLiveSmokeWithDependencies({ model: 'openai-codex/gpt-test' }, { runtimeLoader });
 
 		expect(report).toMatchObject({
 			ok: true,
@@ -32,11 +29,13 @@ describe('runCodexLiveSmoke', () => {
 				initializeRootHarness: () => new Promise(() => undefined),
 			});
 
-		const report = await runCodexLiveSmoke({
-			model: 'openai-codex/gpt-test',
-			runtimeLoader,
-			timeoutMs: 1,
-		});
+		const report = await runCodexLiveSmokeWithDependencies(
+			{
+				model: 'openai-codex/gpt-test',
+				timeoutMs: 1,
+			},
+			{ runtimeLoader },
+		);
 
 		expect(report).toMatchObject({
 			ok: false,
@@ -51,11 +50,13 @@ describe('runCodexLiveSmoke', () => {
 				session: () => new Promise(() => undefined),
 			});
 
-		const report = await runCodexLiveSmoke({
-			model: 'openai-codex/gpt-test',
-			runtimeLoader,
-			timeoutMs: 1,
-		});
+		const report = await runCodexLiveSmokeWithDependencies(
+			{
+				model: 'openai-codex/gpt-test',
+				timeoutMs: 1,
+			},
+			{ runtimeLoader },
+		);
 
 		expect(report.ok).toBe(false);
 		expect(report.message).toContain('timed out');

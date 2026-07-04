@@ -4,13 +4,25 @@ import { FlueCodexError } from '../support/flue-codex-error.js';
 import { isRecord } from '../support/is-record.js';
 import { codexHttpFailureMessage, codexModelsUrl, timeoutSignalBundle } from './http.js';
 import { resolveCodexRuntimeConfig } from './runtime-config.js';
-import type { CodexDiscoveredModel, DiscoverCodexModelsOptions, RawCodexModel } from './codex.types.js';
+import type {
+	CodexDiscoveredModel,
+	DiscoverCodexModelsDependencies,
+	DiscoverCodexModelsOptions,
+	RawCodexModel,
+} from './codex.types.js';
 import { normalizeCodexModel } from './model-normalization.js';
 
 export async function discoverCodexModels(options: DiscoverCodexModelsOptions): Promise<CodexDiscoveredModel[]> {
+	return discoverCodexModelsWithDependencies(options);
+}
+
+export async function discoverCodexModelsWithDependencies(
+	options: DiscoverCodexModelsOptions,
+	dependencies: DiscoverCodexModelsDependencies = {},
+): Promise<CodexDiscoveredModel[]> {
 	const { baseUrl, clientVersion } = await resolveCodexRuntimeConfig(options);
 	const url = codexModelsUrl(baseUrl, clientVersion);
-	const fetcher = options.fetchImpl ?? fetch;
+	const fetcher = dependencies.fetchImpl ?? fetch;
 
 	const timeout = timeoutSignalBundle(options.timeoutMs ?? DEFAULT_CODEX_MODEL_TIMEOUT_MS);
 	const signalBundle = composeAbortSignals([options.signal, timeout.signal]);
