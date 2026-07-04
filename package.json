@@ -1,6 +1,6 @@
 {
 	"name": "@sematico/flue-codex",
-	"version": "0.1.2",
+	"version": "0.2.0",
 	"description": "Register subscription-backed OpenAI Codex models with Flue using local Codex CLI auth.",
 	"type": "module",
 	"repository": {

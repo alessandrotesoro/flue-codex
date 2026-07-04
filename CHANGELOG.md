@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 - 2026-07-04
 
 - Breaking: Narrowed the root export to provider registration, safe provider types, and shared errors.
 - Breaking: Moved provider-definition creation to `@sematico/flue-codex/provider`.
