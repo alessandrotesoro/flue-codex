@@ -3,6 +3,7 @@
 	"version": "0.2.0",
 	"description": "Register subscription-backed OpenAI Codex models with Flue using local Codex CLI auth.",
 	"type": "module",
+	"packageManager": "pnpm@9.8.0",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/alessandrotesoro/flue-codex.git"
@@ -54,6 +55,7 @@
 		"format": "biome format --write .",
 		"lint": "biome lint .",
 		"prepack": "pnpm build",
+		"release:verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"test:live": "FLUE_CODEX_LIVE_SMOKE=1 vitest run test/live-smoke.test.ts"
